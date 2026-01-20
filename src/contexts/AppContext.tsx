@@ -1,10 +1,12 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { User, Language, Level, WeeklyGoal, PlanType, Conversation } from '@/types';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AppContextType {
   user: User | null;
   setUser: (user: User | null) => void;
   isAuthenticated: boolean;
+  authUserId: string | null;
   conversations: Conversation[];
   addConversation: (conversation: Conversation) => void;
   currentConversation: Conversation | null;
@@ -12,29 +14,181 @@ interface AppContextType {
   hasCompletedOnboarding: boolean;
   setHasCompletedOnboarding: (complete: boolean) => void;
   updateUserProfile: (updates: Partial<User>) => void;
-  logout: () => void;
+  logout: () => Promise<void>;
+  isLoading: boolean;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [authUserId, setAuthUserId] = useState<string | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Carregar perfil do banco de dados
+  const loadUserProfile = useCallback(async (userId: string, authEmail: string, authName: string) => {
+    try {
+      const { data: profileData, error } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (profileData) {
+        // Usuário existe no banco
+        setUser({
+          id: userId,
+          name: profileData.name || authName,
+          email: profileData.email || authEmail,
+          avatar: profileData.avatar_url || undefined,
+          language: profileData.language as Language,
+          level: profileData.level as Level,
+          weeklyGoal: profileData.weekly_goal as WeeklyGoal,
+          plan: profileData.plan as PlanType,
+          createdAt: new Date(profileData.created_at),
+        });
+        setHasCompletedOnboarding(profileData.has_completed_onboarding);
+      } else {
+        // Criar perfil para novo usuário
+        const { data: newProfile, error: insertError } = await supabase
+          .from('user_profiles')
+          .insert({
+            user_id: userId,
+            name: authName,
+            email: authEmail,
+            language: 'english',
+            level: 'basic',
+            weekly_goal: 5,
+            plan: 'free_trial',
+            has_completed_onboarding: false,
+          })
+          .select()
+          .single();
+
+        if (insertError) {
+          console.error('Error creating profile:', insertError);
+          // Usar dados padrão
+          setUser({
+            id: userId,
+            name: authName,
+            email: authEmail,
+            language: 'english',
+            level: 'basic',
+            weeklyGoal: 5,
+            plan: 'free_trial',
+            createdAt: new Date(),
+          });
+          setHasCompletedOnboarding(false);
+        } else if (newProfile) {
+          setUser({
+            id: userId,
+            name: newProfile.name,
+            email: newProfile.email || authEmail,
+            language: newProfile.language as Language,
+            level: newProfile.level as Level,
+            weeklyGoal: newProfile.weekly_goal as WeeklyGoal,
+            plan: newProfile.plan as PlanType,
+            createdAt: new Date(newProfile.created_at),
+          });
+          setHasCompletedOnboarding(false);
+
+          // Criar settings padrão
+          await supabase
+            .from('user_settings')
+            .insert({
+              user_id: userId,
+              theme: 'light',
+              notifications_enabled: true,
+              voice_enabled: false,
+            });
+        }
+      }
+    } catch (err) {
+      console.error('Error loading user profile:', err);
+    }
+  }, []);
+
+  // Inicializar autenticação
+  useEffect(() => {
+    // Primeiro, configurar o listener de mudança de estado
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('[AppContext] Auth state changed:', event, session?.user?.id);
+      
+      if (session?.user) {
+        setAuthUserId(session.user.id);
+        await loadUserProfile(
+          session.user.id,
+          session.user.email || '',
+          session.user.user_metadata?.name || 'Usuário'
+        );
+      } else {
+        setAuthUserId(null);
+        setUser(null);
+        setHasCompletedOnboarding(false);
+        setConversations([]);
+        setCurrentConversation(null);
+      }
+      setIsLoading(false);
+    });
+
+    // Depois, verificar sessão existente
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('[AppContext] Initial session:', session?.user?.id);
+      if (session?.user) {
+        setAuthUserId(session.user.id);
+        loadUserProfile(
+          session.user.id,
+          session.user.email || '',
+          session.user.user_metadata?.name || 'Usuário'
+        );
+      } else {
+        setIsLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [loadUserProfile]);
 
   const addConversation = (conversation: Conversation) => {
     setConversations(prev => [conversation, ...prev]);
   };
 
-  const updateUserProfile = (updates: Partial<User>) => {
-    if (user) {
-      setUser({ ...user, ...updates });
+  const updateUserProfile = async (updates: Partial<User>) => {
+    if (!user || !authUserId) return;
+
+    // Atualizar estado local
+    setUser({ ...user, ...updates });
+
+    // Atualizar no banco de dados
+    const dbUpdates: Record<string, unknown> = {};
+    if (updates.name) dbUpdates.name = updates.name;
+    if (updates.language) dbUpdates.language = updates.language;
+    if (updates.level) dbUpdates.level = updates.level;
+    if (updates.weeklyGoal) dbUpdates.weekly_goal = updates.weeklyGoal;
+    if (updates.plan) dbUpdates.plan = updates.plan;
+    if (updates.avatar) dbUpdates.avatar_url = updates.avatar;
+
+    if (Object.keys(dbUpdates).length > 0) {
+      const { error } = await supabase
+        .from('user_profiles')
+        .update(dbUpdates)
+        .eq('user_id', authUserId);
+
+      if (error) {
+        console.error('Error updating profile:', error);
+      }
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await supabase.auth.signOut();
     setUser(null);
+    setAuthUserId(null);
     setConversations([]);
     setCurrentConversation(null);
     setHasCompletedOnboarding(false);
@@ -46,6 +200,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         user,
         setUser,
         isAuthenticated: !!user,
+        authUserId,
         conversations,
         addConversation,
         currentConversation,
@@ -54,6 +209,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setHasCompletedOnboarding,
         updateUserProfile,
         logout,
+        isLoading,
       }}
     >
       {children}

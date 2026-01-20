@@ -5,18 +5,60 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const scenarioPrompts: Record<string, string> = {
-  restaurant: `Você é um garçom experiente e educado em um restaurante sofisticado. Mantenha a conversa natural sobre pedidos de comida, bebidas, recomendações do cardápio e atendimento ao cliente. Sempre responda em inglês para ajudar o usuário a praticar.`,
-  interview: `Você é um entrevistador profissional de RH em uma grande empresa. Faça perguntas típicas de entrevista de emprego, avalie respostas e dê feedback implícito. Seja profissional mas acolhedor. Sempre responda em inglês.`,
-  hotel: `Você é um recepcionista de hotel 5 estrelas. Ajude com check-in, check-out, reservas, serviço de quarto e informações sobre o hotel. Seja cortês e prestativo. Sempre responda em inglês.`,
-  airport: `Você é um agente de aeroporto trabalhando no check-in ou imigração. Faça perguntas sobre documentos, bagagem, destino e procedimentos de segurança. Seja profissional. Sempre responda em inglês.`,
-  shopping: `Você é um vendedor em uma loja de roupas ou departamentos. Ajude clientes a encontrar produtos, discuta tamanhos, preços, cores e faça sugestões. Seja amigável e prestativo. Sempre responda em inglês.`,
-  business: `Você é um executivo em uma reunião de negócios. Discuta projetos, metas, resultados e estratégias de forma profissional. Use vocabulário corporativo. Sempre responda em inglês.`,
-  hospital: `Você é um médico ou enfermeiro em um hospital. Pergunte sobre sintomas, histórico médico, faça diagnósticos simples e dê recomendações. Seja empático e profissional. Sempre responda em inglês.`,
-  transport: `Você é um motorista de aplicativo (Uber/Lyft). Converse sobre destino, rota preferida, condições de trânsito e faça small talk. Seja amigável. Sempre responda em inglês.`,
+// Mapeamento de idiomas para prompts contextuais
+const languageConfig: Record<string, { name: string; instruction: string }> = {
+  english: {
+    name: "English",
+    instruction: "Respond ONLY in English. Help the user practice English conversation.",
+  },
+  spanish: {
+    name: "Spanish", 
+    instruction: "Respond ONLY in Spanish (Español). Help the user practice Spanish conversation.",
+  },
+  french: {
+    name: "French",
+    instruction: "Respond ONLY in French (Français). Help the user practice French conversation.",
+  },
+  italian: {
+    name: "Italian",
+    instruction: "Respond ONLY in Italian (Italiano). Help the user practice Italian conversation.",
+  },
+  german: {
+    name: "German",
+    instruction: "Respond ONLY in German (Deutsch). Help the user practice German conversation.",
+  },
 };
 
-const logStep = (step: string, details?: any) => {
+// Prompts de cenário (agora genéricos, idioma será adicionado dinamicamente)
+const scenarioPrompts: Record<string, string> = {
+  restaurant: `You are an experienced and polite waiter at a sophisticated restaurant. Keep the conversation natural about food orders, drinks, menu recommendations and customer service.`,
+  interview: `You are a professional HR interviewer at a large company. Ask typical job interview questions, evaluate answers and give implicit feedback. Be professional but welcoming.`,
+  hotel: `You are a 5-star hotel receptionist. Help with check-in, check-out, reservations, room service and hotel information. Be courteous and helpful.`,
+  airport: `You are an airport agent working at check-in or immigration. Ask questions about documents, luggage, destination and security procedures. Be professional.`,
+  shopping: `You are a salesperson at a clothing or department store. Help customers find products, discuss sizes, prices, colors and make suggestions. Be friendly and helpful.`,
+  business: `You are an executive in a business meeting. Discuss projects, goals, results and strategies professionally. Use corporate vocabulary.`,
+  hospital: `You are a doctor or nurse at a hospital. Ask about symptoms, medical history, make simple diagnoses and give recommendations. Be empathetic and professional.`,
+  transport: `You are a ride-share driver (Uber/Lyft). Talk about destination, preferred route, traffic conditions and make small talk. Be friendly.`,
+};
+
+// Instruções de nível adaptativo
+const levelInstructions: Record<string, string> = {
+  basic: "The user is a beginner. Use simple phrases, basic vocabulary and speak slowly. Correct errors gently. Avoid complex grammar.",
+  intermediate: "The user has intermediate level. Use moderately complex phrases and varied vocabulary. Introduce some idiomatic expressions.",
+  advanced: "The user is advanced. Use idiomatic expressions, sophisticated vocabulary and complex structures. Challenge them with nuanced language.",
+};
+
+// Instruções de nível adaptativo avançado (baseado em desempenho)
+const adaptiveLevelInstructions: Record<string, string> = {
+  A1: "Absolute beginner. Use only the most basic words and very short sentences. Avoid any complex structures.",
+  A2: "Elementary level. Use simple everyday vocabulary and basic sentence patterns. Keep it very accessible.",
+  B1: "Lower intermediate. Can handle familiar situations. Use clear standard language with some variety.",
+  B2: "Upper intermediate. Good command of the language. Use more complex structures and wider vocabulary.",
+  C1: "Advanced. Use sophisticated language, idioms, and subtle nuances. Challenge them intellectually.",
+  C2: "Near-native. Use the full range of the language naturally, including humor and cultural references.",
+};
+
+const logStep = (step: string, details?: unknown) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
   console.log(`[CHAT] ${step}${detailsStr}`);
 };
@@ -27,34 +69,42 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, scenarioId, userLevel } = await req.json();
-    logStep("Request received", { scenarioId, userLevel, messageCount: messages?.length });
+    const { messages, scenarioId, userLevel, userLanguage, adaptiveLevel } = await req.json();
+    logStep("Request received", { scenarioId, userLevel, userLanguage, adaptiveLevel, messageCount: messages?.length });
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    const scenarioContext = scenarioPrompts[scenarioId] || "Você é um assistente de idiomas prestativo. Ajude o usuário a praticar inglês.";
+    // Configuração do idioma (padrão: inglês)
+    const language = userLanguage || 'english';
+    const langConfig = languageConfig[language] || languageConfig.english;
     
-    const levelInstructions = {
-      basic: "O usuário é iniciante. Use frases simples, vocabulário básico e fale devagar. Corrija erros gentilmente.",
-      intermediate: "O usuário tem nível intermediário. Use frases moderadamente complexas e vocabulário variado.",
-      advanced: "O usuário é avançado. Use expressões idiomáticas, vocabulário sofisticado e estruturas complexas.",
-    };
+    // Contexto do cenário
+    const scenarioContext = scenarioPrompts[scenarioId] || "You are a helpful language assistant. Help the user practice conversation.";
+    
+    // Instruções de nível (usa nível adaptativo se disponível)
+    const levelInstruction = adaptiveLevel && adaptiveLevelInstructions[adaptiveLevel]
+      ? adaptiveLevelInstructions[adaptiveLevel]
+      : levelInstructions[userLevel as keyof typeof levelInstructions] || levelInstructions.intermediate;
 
-    const systemPrompt = `${scenarioContext}
+    const systemPrompt = `${langConfig.instruction}
 
-Nível do usuário: ${levelInstructions[userLevel as keyof typeof levelInstructions] || levelInstructions.intermediate}
+SCENARIO: ${scenarioContext}
 
-Instruções importantes:
-- Mantenha respostas curtas (1-3 frases) para simular conversa natural
-- Faça perguntas para manter a conversa fluindo
-- Se o usuário cometer erros, continue a conversa naturalmente (a correção será feita no feedback)
-- Mantenha-se estritamente no contexto do cenário
-- Seja encorajador e paciente`;
+USER LEVEL: ${levelInstruction}
 
-    logStep("Calling AI gateway");
+CRITICAL INSTRUCTIONS:
+- You MUST respond ONLY in ${langConfig.name}. Never switch to another language.
+- Keep responses short (1-3 sentences) to simulate natural conversation.
+- Ask questions to keep the conversation flowing.
+- If the user makes errors, continue naturally (corrections will be in feedback).
+- Stay strictly in the scenario context.
+- Be encouraging and patient.
+- Adapt your vocabulary and complexity to the user's level.`;
+
+    logStep("System prompt configured", { language, scenarioId, level: adaptiveLevel || userLevel });
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -63,7 +113,7 @@ Instruções importantes:
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-3-flash-preview",
         messages: [
           { role: "system", content: systemPrompt },
           ...messages,
