@@ -6,56 +6,99 @@ const corsHeaders = {
 };
 
 // Mapeamento de idiomas para prompts contextuais
-const languageConfig: Record<string, { name: string; instruction: string }> = {
+const languageConfig: Record<string, { name: string; nativeName: string; instruction: string }> = {
   english: {
     name: "English",
+    nativeName: "Inglês",
     instruction: "Respond ONLY in English. Help the user practice English conversation.",
   },
   spanish: {
     name: "Spanish", 
-    instruction: "Respond ONLY in Spanish (Español). Help the user practice Spanish conversation.",
+    nativeName: "Espanhol",
+    instruction: "Respond ONLY in Spanish (Español). Help the user practice Spanish conversation. Use natural Spanish from Spain or Latin America.",
   },
   french: {
     name: "French",
-    instruction: "Respond ONLY in French (Français). Help the user practice French conversation.",
+    nativeName: "Francês",
+    instruction: "Respond ONLY in French (Français). Help the user practice French conversation. Use natural French.",
   },
   italian: {
     name: "Italian",
-    instruction: "Respond ONLY in Italian (Italiano). Help the user practice Italian conversation.",
+    nativeName: "Italiano",
+    instruction: "Respond ONLY in Italian (Italiano). Help the user practice Italian conversation. Use natural Italian.",
   },
   german: {
     name: "German",
-    instruction: "Respond ONLY in German (Deutsch). Help the user practice German conversation.",
+    nativeName: "Alemão",
+    instruction: "Respond ONLY in German (Deutsch). Help the user practice German conversation. Use natural German.",
   },
 };
 
-// Prompts de cenário (agora genéricos, idioma será adicionado dinamicamente)
-const scenarioPrompts: Record<string, string> = {
-  restaurant: `You are an experienced and polite waiter at a sophisticated restaurant. Keep the conversation natural about food orders, drinks, menu recommendations and customer service.`,
-  interview: `You are a professional HR interviewer at a large company. Ask typical job interview questions, evaluate answers and give implicit feedback. Be professional but welcoming.`,
-  hotel: `You are a 5-star hotel receptionist. Help with check-in, check-out, reservations, room service and hotel information. Be courteous and helpful.`,
-  airport: `You are an airport agent working at check-in or immigration. Ask questions about documents, luggage, destination and security procedures. Be professional.`,
-  shopping: `You are a salesperson at a clothing or department store. Help customers find products, discuss sizes, prices, colors and make suggestions. Be friendly and helpful.`,
-  business: `You are an executive in a business meeting. Discuss projects, goals, results and strategies professionally. Use corporate vocabulary.`,
-  hospital: `You are a doctor or nurse at a hospital. Ask about symptoms, medical history, make simple diagnoses and give recommendations. Be empathetic and professional.`,
-  transport: `You are a ride-share driver (Uber/Lyft). Talk about destination, preferred route, traffic conditions and make small talk. Be friendly.`,
+// Prompts de cenário por idioma
+const scenarioPrompts: Record<string, Record<string, string>> = {
+  english: {
+    restaurant: `You are a polite waiter at a restaurant. Keep the conversation natural about food orders, drinks, and menu recommendations.`,
+    interview: `You are a professional HR interviewer. Ask typical job interview questions, evaluate answers naturally. Be professional but welcoming.`,
+    hotel: `You are a 5-star hotel receptionist. Help with check-in, reservations, room service. Be courteous and helpful.`,
+    airport: `You are an airport agent at check-in or immigration. Ask about documents, luggage, destination. Be professional.`,
+    shopping: `You are a salesperson at a store. Help find products, discuss sizes, prices. Be friendly and helpful.`,
+    business: `You are an executive in a business meeting. Discuss projects, goals, strategies professionally.`,
+    hospital: `You are a doctor or nurse. Ask about symptoms, give recommendations. Be empathetic and professional.`,
+    transport: `You are a ride-share driver. Talk about destination, route, make small talk. Be friendly.`,
+  },
+  spanish: {
+    restaurant: `Eres un camarero amable en un restaurante. Mantén la conversación natural sobre pedidos de comida, bebidas y recomendaciones del menú.`,
+    interview: `Eres un entrevistador de recursos humanos profesional. Haz preguntas típicas de entrevistas de trabajo. Sé profesional pero acogedor.`,
+    hotel: `Eres recepcionista de un hotel 5 estrellas. Ayuda con el check-in, reservas, servicio de habitaciones. Sé cortés y servicial.`,
+    airport: `Eres un agente de aeropuerto en el check-in o inmigración. Pregunta sobre documentos, equipaje, destino. Sé profesional.`,
+    shopping: `Eres vendedor en una tienda. Ayuda a encontrar productos, discute tallas, precios. Sé amigable y servicial.`,
+    business: `Eres un ejecutivo en una reunión de negocios. Discute proyectos, metas, estrategias profesionalmente.`,
+    hospital: `Eres médico o enfermero. Pregunta sobre síntomas, da recomendaciones. Sé empático y profesional.`,
+    transport: `Eres conductor de Uber/taxi. Habla sobre el destino, la ruta, haz conversación casual. Sé amigable.`,
+  },
+  french: {
+    restaurant: `Vous êtes un serveur poli dans un restaurant. Gardez la conversation naturelle sur les commandes, boissons et recommandations du menu.`,
+    interview: `Vous êtes un recruteur professionnel. Posez des questions d'entretien typiques. Soyez professionnel mais accueillant.`,
+    hotel: `Vous êtes réceptionniste d'un hôtel 5 étoiles. Aidez avec l'enregistrement, les réservations, le room service. Soyez courtois et serviable.`,
+    airport: `Vous êtes agent à l'aéroport. Posez des questions sur les documents, bagages, destination. Soyez professionnel.`,
+    shopping: `Vous êtes vendeur dans un magasin. Aidez à trouver des produits, discutez des tailles, prix. Soyez amical et serviable.`,
+    business: `Vous êtes un cadre en réunion d'affaires. Discutez des projets, objectifs, stratégies professionnellement.`,
+    hospital: `Vous êtes médecin ou infirmier. Posez des questions sur les symptômes, donnez des recommandations. Soyez empathique et professionnel.`,
+    transport: `Vous êtes chauffeur VTC. Parlez de la destination, du trajet, faites la conversation. Soyez amical.`,
+  },
+  italian: {
+    restaurant: `Sei un cameriere gentile in un ristorante. Mantieni la conversazione naturale sugli ordini, bevande e raccomandazioni del menu.`,
+    interview: `Sei un recruiter professionale. Fai domande tipiche dei colloqui di lavoro. Sii professionale ma accogliente.`,
+    hotel: `Sei receptionist di un hotel 5 stelle. Aiuta con il check-in, prenotazioni, servizio in camera. Sii cortese e disponibile.`,
+    airport: `Sei un agente aeroportuale. Fai domande su documenti, bagagli, destinazione. Sii professionale.`,
+    shopping: `Sei commesso in un negozio. Aiuta a trovare prodotti, discuti taglie, prezzi. Sii amichevole e disponibile.`,
+    business: `Sei un dirigente in una riunione di lavoro. Discuti progetti, obiettivi, strategie professionalmente.`,
+    hospital: `Sei medico o infermiere. Chiedi dei sintomi, dai raccomandazioni. Sii empatico e professionale.`,
+    transport: `Sei un autista Uber/taxi. Parla della destinazione, del percorso, fai conversazione. Sii amichevole.`,
+  },
+  german: {
+    restaurant: `Du bist ein höflicher Kellner in einem Restaurant. Halte das Gespräch natürlich über Bestellungen, Getränke und Menüempfehlungen.`,
+    interview: `Du bist ein professioneller HR-Interviewer. Stelle typische Vorstellungsfragen. Sei professionell aber einladend.`,
+    hotel: `Du bist Rezeptionist in einem 5-Sterne-Hotel. Hilf beim Check-in, Reservierungen, Zimmerservice. Sei höflich und hilfsbereit.`,
+    airport: `Du bist Flughafenangestellter. Frage nach Dokumenten, Gepäck, Reiseziel. Sei professionell.`,
+    shopping: `Du bist Verkäufer in einem Geschäft. Hilf Produkte zu finden, diskutiere Größen, Preise. Sei freundlich und hilfsbereit.`,
+    business: `Du bist eine Führungskraft in einem Geschäftsmeeting. Diskutiere Projekte, Ziele, Strategien professionell.`,
+    hospital: `Du bist Arzt oder Krankenpfleger. Frage nach Symptomen, gib Empfehlungen. Sei einfühlsam und professionell.`,
+    transport: `Du bist Uber/Taxi-Fahrer. Sprich über das Ziel, die Route, mach Smalltalk. Sei freundlich.`,
+  },
 };
 
 // Instruções de nível adaptativo
-const levelInstructions: Record<string, string> = {
-  basic: "The user is a beginner. Use simple phrases, basic vocabulary and speak slowly. Correct errors gently. Avoid complex grammar.",
-  intermediate: "The user has intermediate level. Use moderately complex phrases and varied vocabulary. Introduce some idiomatic expressions.",
-  advanced: "The user is advanced. Use idiomatic expressions, sophisticated vocabulary and complex structures. Challenge them with nuanced language.",
-};
-
-// Instruções de nível adaptativo avançado (baseado em desempenho)
 const adaptiveLevelInstructions: Record<string, string> = {
-  A1: "Absolute beginner. Use only the most basic words and very short sentences. Avoid any complex structures.",
-  A2: "Elementary level. Use simple everyday vocabulary and basic sentence patterns. Keep it very accessible.",
-  B1: "Lower intermediate. Can handle familiar situations. Use clear standard language with some variety.",
-  B2: "Upper intermediate. Good command of the language. Use more complex structures and wider vocabulary.",
-  C1: "Advanced. Use sophisticated language, idioms, and subtle nuances. Challenge them intellectually.",
-  C2: "Near-native. Use the full range of the language naturally, including humor and cultural references.",
+  A1: "Absolute beginner. Use only basic words and very short sentences. Speak slowly, be patient.",
+  A2: "Elementary level. Use simple everyday vocabulary and basic sentence patterns.",
+  B1: "Lower intermediate. Can handle familiar situations. Use clear standard language.",
+  B2: "Upper intermediate. Good command. Use more complex structures and wider vocabulary.",
+  C1: "Advanced. Use sophisticated language, idioms, and subtle nuances.",
+  C2: "Near-native. Use the full range of the language naturally.",
+  basic: "Beginner. Use simple phrases, basic vocabulary. Avoid complex grammar.",
+  intermediate: "Intermediate level. Use moderately complex phrases and varied vocabulary.",
+  advanced: "Advanced. Use idiomatic expressions, sophisticated vocabulary and complex structures.",
 };
 
 const logStep = (step: string, details?: unknown) => {
@@ -69,7 +112,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, scenarioId, userLevel, userLanguage, adaptiveLevel } = await req.json();
+    const { messages, scenarioId, userLevel, userLanguage, adaptiveLevel, includeInstantFeedback } = await req.json();
     logStep("Request received", { scenarioId, userLevel, userLanguage, adaptiveLevel, messageCount: messages?.length });
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -81,13 +124,29 @@ serve(async (req) => {
     const language = userLanguage || 'english';
     const langConfig = languageConfig[language] || languageConfig.english;
     
-    // Contexto do cenário
-    const scenarioContext = scenarioPrompts[scenarioId] || "You are a helpful language assistant. Help the user practice conversation.";
+    // Contexto do cenário no idioma correto
+    const scenarioContexts = scenarioPrompts[language] || scenarioPrompts.english;
+    const scenarioContext = scenarioContexts[scenarioId] || "You are a helpful language assistant. Help the user practice conversation.";
     
-    // Instruções de nível (usa nível adaptativo se disponível)
-    const levelInstruction = adaptiveLevel && adaptiveLevelInstructions[adaptiveLevel]
-      ? adaptiveLevelInstructions[adaptiveLevel]
-      : levelInstructions[userLevel as keyof typeof levelInstructions] || levelInstructions.intermediate;
+    // Instruções de nível
+    const levelInstruction = adaptiveLevelInstructions[adaptiveLevel] || adaptiveLevelInstructions[userLevel] || adaptiveLevelInstructions.intermediate;
+
+    // Prompt com feedback instantâneo
+    const instantFeedbackInstruction = includeInstantFeedback ? `
+
+INSTANT FEEDBACK (IMPORTANT):
+After each response in ${langConfig.name}, add a separator "---" and provide a BRIEF tip in Portuguese (Brazilian):
+- If the user made a small error, gently mention the correct form
+- Give a contextual tip relevant to the scenario
+- Keep it to 1-2 sentences maximum
+- Format: "💡 Dica: [your tip in Portuguese]"
+- If the user did well, give encouragement: "✨ [positive feedback in Portuguese]"
+
+Example format:
+[Your response in ${langConfig.name}]
+
+---
+💡 Dica: Quando pedir comida, use "I would like..." em vez de "I want..." para ser mais educado.` : '';
 
     const systemPrompt = `${langConfig.instruction}
 
@@ -96,13 +155,13 @@ SCENARIO: ${scenarioContext}
 USER LEVEL: ${levelInstruction}
 
 CRITICAL INSTRUCTIONS:
-- You MUST respond ONLY in ${langConfig.name}. Never switch to another language.
+- You MUST respond ONLY in ${langConfig.name}. NEVER switch to another language for the main response.
 - Keep responses short (1-3 sentences) to simulate natural conversation.
 - Ask questions to keep the conversation flowing.
-- If the user makes errors, continue naturally (corrections will be in feedback).
+- If the user makes errors, continue naturally in the conversation.
 - Stay strictly in the scenario context.
 - Be encouraging and patient.
-- Adapt your vocabulary and complexity to the user's level.`;
+- Adapt your vocabulary and complexity to the user's level.${instantFeedbackInstruction}`;
 
     logStep("System prompt configured", { language, scenarioId, level: adaptiveLevel || userLevel });
 

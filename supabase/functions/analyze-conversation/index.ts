@@ -5,6 +5,14 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const languageNames: Record<string, { name: string; nativeName: string }> = {
+  english: { name: "English", nativeName: "inglês" },
+  spanish: { name: "Spanish", nativeName: "espanhol" },
+  french: { name: "French", nativeName: "francês" },
+  italian: { name: "Italian", nativeName: "italiano" },
+  german: { name: "German", nativeName: "alemão" },
+};
+
 const logStep = (step: string, details?: any) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
   console.log(`[ANALYZE] ${step}${detailsStr}`);
@@ -16,25 +24,29 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, scenarioId, userLevel } = await req.json();
-    logStep("Request received", { scenarioId, userLevel, messageCount: messages?.length });
+    const { messages, scenarioId, userLevel, userLanguage } = await req.json();
+    logStep("Request received", { scenarioId, userLevel, userLanguage, messageCount: messages?.length });
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
+    const language = userLanguage || 'english';
+    const langInfo = languageNames[language] || languageNames.english;
+
     const userMessages = messages.filter((m: any) => m.role === 'user').map((m: any) => m.content);
     const conversationText = messages.map((m: any) => `${m.role === 'user' ? 'Student' : 'AI'}: ${m.content}`).join('\n');
 
-    const systemPrompt = `Você é um professor de inglês especializado em análise de conversação. Analise a conversa do aluno e forneça feedback detalhado e construtivo.
+    const systemPrompt = `Você é um professor de ${langInfo.nativeName} especializado em análise de conversação. Analise a conversa do aluno praticando ${langInfo.nativeName} e forneça feedback detalhado e construtivo.
 
 O cenário da conversa é: ${scenarioId}
 Nível declarado do aluno: ${userLevel}
+Idioma praticado: ${langInfo.name} (${langInfo.nativeName})
 
-Analise APENAS as mensagens do estudante (não do AI) e forneça uma avaliação honesta mas encorajadora.`;
+Analise APENAS as mensagens do estudante (não do AI) e forneça uma avaliação honesta mas encorajadora. Lembre-se que o aluno está praticando ${langInfo.nativeName}, então analise os erros nesse idioma.`;
 
-    const analysisPrompt = `Analise esta conversa de prática de inglês e retorne um JSON com a seguinte estrutura exata:
+    const analysisPrompt = `Analise esta conversa de prática de ${langInfo.nativeName} e retorne um JSON com a seguinte estrutura exata:
 
 {
   "overallScore": <número 0-100>,
@@ -45,8 +57,8 @@ Analise APENAS as mensagens do estudante (não do AI) e forneça uma avaliação
   "contextCoherence": <número 0-100>,
   "errors": [
     {
-      "original": "<frase com erro>",
-      "corrected": "<frase corrigida>",
+      "original": "<frase com erro em ${langInfo.nativeName}>",
+      "corrected": "<frase corrigida em ${langInfo.nativeName}>",
       "category": "<grammar|vocabulary|spelling|punctuation>",
       "explanation": "<explicação em português do erro>"
     }
@@ -64,12 +76,12 @@ ${userMessages.join('\n')}
 
 IMPORTANTE: 
 - Retorne APENAS o JSON, sem markdown ou texto adicional
-- Os erros devem ser baseados nas mensagens REAIS do estudante
+- Os erros devem ser baseados nas mensagens REAIS do estudante em ${langInfo.nativeName}
 - Se não houver erros, retorne um array vazio
 - Seja específico nas correções
-- Os scores devem refletir o desempenho real`;
+- Os scores devem refletir o desempenho real no idioma ${langInfo.nativeName}`;
 
-    logStep("Calling AI for analysis");
+    logStep("Calling AI for analysis", { language });
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -130,7 +142,7 @@ IMPORTANTE:
       };
     }
 
-    logStep("Analysis complete", { overallScore: feedback.overallScore });
+    logStep("Analysis complete", { overallScore: feedback.overallScore, language });
 
     return new Response(JSON.stringify(feedback), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
