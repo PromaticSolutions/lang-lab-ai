@@ -146,6 +146,17 @@ const Chat: React.FC = () => {
         content: m.content,
       }));
 
+      // Buscar nível adaptativo do perfil
+      let adaptiveLevel = null;
+      if (authUserId) {
+        const { data: profileData } = await supabase
+          .from('user_profiles')
+          .select('current_adaptive_level')
+          .eq('user_id', authUserId)
+          .maybeSingle();
+        adaptiveLevel = profileData?.current_adaptive_level;
+      }
+
       const response = await fetch(CHAT_URL, {
         method: 'POST',
         headers: {
@@ -156,6 +167,8 @@ const Chat: React.FC = () => {
           messages: chatMessages,
           scenarioId: scenarioId,
           userLevel: user?.level || 'intermediate',
+          userLanguage: user?.language || 'english',
+          adaptiveLevel: adaptiveLevel,
         }),
       });
 

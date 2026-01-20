@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '@/contexts/AppContext';
 import {
@@ -23,7 +23,7 @@ import { useToast } from '@/hooks/use-toast';
 
 const Settings: React.FC = () => {
   const navigate = useNavigate();
-  const { user, logout } = useApp();
+  const { user, logout, authUserId } = useApp();
   const { toast } = useToast();
   
   const [notifications, setNotifications] = useState(true);
@@ -33,25 +33,60 @@ const Settings: React.FC = () => {
   });
   const [loadingPortal, setLoadingPortal] = useState(false);
 
-  // Apply dark mode effect
+  // Salvar configurações no banco de dados
+  const saveSettings = useCallback(async (field: string, value: boolean) => {
+    if (!authUserId) return;
+    
+    try {
+      const { error } = await supabase
+        .from('user_settings')
+        .update({ [field]: value })
+        .eq('user_id', authUserId);
+      
+      if (error) throw error;
+    } catch (err) {
+      console.error('Error saving settings:', err);
+    }
+  }, [authUserId]);
+
+  // Carregar configurações do banco
+  useEffect(() => {
+    const loadSettings = async () => {
+      if (!authUserId) return;
+
+      const { data, error } = await supabase
+        .from('user_settings')
+        .select('*')
+        .eq('user_id', authUserId)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error loading settings:', error);
+        return;
+      }
+
+      if (data) {
+        setNotifications(data.notifications_enabled);
+        setSounds(data.voice_enabled);
+        if (data.theme === 'dark') {
+          setDarkMode(true);
+          document.documentElement.classList.add('dark');
+        }
+      }
+    };
+
+    loadSettings();
+  }, [authUserId]);
+
+  // Aplicar tema e salvar no banco
   useEffect(() => {
     if (darkMode) {
       document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
     } else {
       document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
     }
-  }, [darkMode]);
-
-  // Load theme from localStorage on mount
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme === 'dark') {
-      setDarkMode(true);
-      document.documentElement.classList.add('dark');
-    }
-  }, []);
+    saveSettings('theme', darkMode);
+  }, [darkMode, saveSettings]);
 
   const planLabels: Record<string, string> = {
     free_trial: 'Free Trial',
@@ -171,14 +206,20 @@ const Settings: React.FC = () => {
                 label="Notificações"
                 description="Receba lembretes de prática"
                 checked={notifications}
-                onChange={setNotifications}
+                onChange={(checked) => {
+                  setNotifications(checked);
+                  saveSettings('notifications_enabled', checked);
+                }}
               />
               <ToggleSetting
                 icon={<Volume2 className="w-5 h-5" />}
                 label="Sons do app"
                 description="Efeitos sonoros e alertas"
                 checked={sounds}
-                onChange={setSounds}
+                onChange={(checked) => {
+                  setSounds(checked);
+                  saveSettings('voice_enabled', checked);
+                }}
               />
               <ToggleSetting
                 icon={darkMode ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}

@@ -10,53 +10,28 @@ import { supabase } from '@/integrations/supabase/client';
 
 const Auth: React.FC = () => {
   const navigate = useNavigate();
-  const { setUser, setHasCompletedOnboarding } = useApp();
+  const { isAuthenticated, hasCompletedOnboarding, isLoading } = useApp();
   const { toast } = useToast();
   
   const [showPassword, setShowPassword] = useState(false);
   const [loginData, setLoginData] = useState({ email: '', password: '' });
   const [registerData, setRegisterData] = useState({ name: '', email: '', password: '', cpf: '' });
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Redirecionar se já estiver autenticado
   useEffect(() => {
-    // Check if user is already logged in
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        setUser({
-          id: session.user.id,
-          name: session.user.user_metadata?.name || 'Usuário',
-          email: session.user.email || '',
-          language: 'english',
-          level: 'basic',
-          weeklyGoal: 5,
-          plan: 'free_trial',
-          createdAt: new Date(session.user.created_at),
-        });
+    if (!isLoading && isAuthenticated) {
+      if (hasCompletedOnboarding) {
         navigate('/home');
+      } else {
+        navigate('/onboarding');
       }
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
-        setUser({
-          id: session.user.id,
-          name: session.user.user_metadata?.name || 'Usuário',
-          email: session.user.email || '',
-          language: 'english',
-          level: 'basic',
-          weeklyGoal: 5,
-          plan: 'free_trial',
-          createdAt: new Date(session.user.created_at),
-        });
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+    }
+  }, [isAuthenticated, hasCompletedOnboarding, isLoading, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    setIsSubmitting(true);
     
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -86,7 +61,7 @@ const Auth: React.FC = () => {
           title: "Bem-vindo de volta!",
           description: "Login realizado com sucesso.",
         });
-        navigate('/home');
+        // Redirecionamento será feito pelo useEffect
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -96,13 +71,13 @@ const Auth: React.FC = () => {
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    setIsSubmitting(true);
     
     try {
       const redirectUrl = `${window.location.origin}/`;
@@ -137,7 +112,6 @@ const Auth: React.FC = () => {
       }
 
       if (data.user) {
-        setHasCompletedOnboarding(false);
         toast({
           title: "Conta criada!",
           description: "Vamos configurar seu perfil.",
@@ -152,7 +126,7 @@ const Auth: React.FC = () => {
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -176,6 +150,15 @@ const Auth: React.FC = () => {
       console.error('Google auth error:', error);
     }
   };
+
+  // Mostrar loading enquanto verifica autenticação
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -258,8 +241,8 @@ const Auth: React.FC = () => {
                 Esqueci minha senha
               </button>
 
-              <Button type="submit" size="lg" className="w-full" disabled={isLoading}>
-                {isLoading ? (
+              <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
+                {isSubmitting ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                     Entrando...
@@ -357,8 +340,8 @@ const Auth: React.FC = () => {
                 />
               </div>
 
-              <Button type="submit" size="lg" className="w-full" disabled={isLoading}>
-                {isLoading ? (
+              <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
+                {isSubmitting ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                     Criando conta...

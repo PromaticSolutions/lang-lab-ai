@@ -125,6 +125,90 @@ export type Database = {
         }
         Relationships: []
       }
+      user_profiles: {
+        Row: {
+          avatar_url: string | null
+          average_score: number | null
+          created_at: string
+          current_adaptive_level: string | null
+          email: string | null
+          has_completed_onboarding: boolean
+          id: string
+          language: string
+          level: string
+          name: string
+          plan: string
+          total_conversations: number
+          updated_at: string
+          user_id: string
+          weekly_goal: number
+        }
+        Insert: {
+          avatar_url?: string | null
+          average_score?: number | null
+          created_at?: string
+          current_adaptive_level?: string | null
+          email?: string | null
+          has_completed_onboarding?: boolean
+          id?: string
+          language?: string
+          level?: string
+          name?: string
+          plan?: string
+          total_conversations?: number
+          updated_at?: string
+          user_id: string
+          weekly_goal?: number
+        }
+        Update: {
+          avatar_url?: string | null
+          average_score?: number | null
+          created_at?: string
+          current_adaptive_level?: string | null
+          email?: string | null
+          has_completed_onboarding?: boolean
+          id?: string
+          language?: string
+          level?: string
+          name?: string
+          plan?: string
+          total_conversations?: number
+          updated_at?: string
+          user_id?: string
+          weekly_goal?: number
+        }
+        Relationships: []
+      }
+      user_settings: {
+        Row: {
+          created_at: string
+          id: string
+          notifications_enabled: boolean
+          theme: string
+          updated_at: string
+          user_id: string
+          voice_enabled: boolean
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notifications_enabled?: boolean
+          theme?: string
+          updated_at?: string
+          user_id: string
+          voice_enabled?: boolean
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notifications_enabled?: boolean
+          theme?: string
+          updated_at?: string
+          user_id?: string
+          voice_enabled?: boolean
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

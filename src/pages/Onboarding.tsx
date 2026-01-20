@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useApp } from '@/contexts/AppContext';
 import { Language, Level, WeeklyGoal } from '@/types';
-import { Check, Globe, Target, Calendar, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Check, Globe, Target, Calendar, ArrowRight, ArrowLeft, Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 const languages = [
   { id: 'english', name: 'Inglês', flag: '🇺🇸' },
@@ -14,9 +16,9 @@ const languages = [
 ];
 
 const levels = [
-  { id: 'basic', name: 'Básico', description: 'Estou começando do zero' },
-  { id: 'intermediate', name: 'Intermediário', description: 'Conheço o básico' },
-  { id: 'advanced', name: 'Avançado', description: 'Quero aperfeiçoar' },
+  { id: 'basic', name: 'Básico', description: 'Estou começando do zero', adaptiveLevel: 'A1' },
+  { id: 'intermediate', name: 'Intermediário', description: 'Conheço o básico', adaptiveLevel: 'B1' },
+  { id: 'advanced', name: 'Avançado', description: 'Quero aperfeiçoar', adaptiveLevel: 'C1' },
 ];
 
 const goals = [
@@ -27,23 +29,70 @@ const goals = [
 
 const Onboarding: React.FC = () => {
   const navigate = useNavigate();
-  const { updateUserProfile, setHasCompletedOnboarding } = useApp();
+  const { updateUserProfile, setHasCompletedOnboarding, authUserId } = useApp();
+  const { toast } = useToast();
   const [step, setStep] = useState(1);
   const [selectedLanguage, setSelectedLanguage] = useState<Language>('english');
   const [selectedLevel, setSelectedLevel] = useState<Level>('basic');
   const [selectedGoal, setSelectedGoal] = useState<WeeklyGoal>(5);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleNext = () => {
+  // Verificar se usuário está autenticado
+  useEffect(() => {
+    if (!authUserId) {
+      navigate('/auth');
+    }
+  }, [authUserId, navigate]);
+
+  const handleNext = async () => {
     if (step < 3) {
       setStep(step + 1);
     } else {
-      updateUserProfile({
-        language: selectedLanguage,
-        level: selectedLevel,
-        weeklyGoal: selectedGoal,
-      });
-      setHasCompletedOnboarding(true);
-      navigate('/home');
+      setIsSaving(true);
+      
+      try {
+        // Determinar nível adaptativo inicial
+        const selectedLevelData = levels.find(l => l.id === selectedLevel);
+        const adaptiveLevel = selectedLevelData?.adaptiveLevel || 'B1';
+
+        // Salvar no banco de dados
+        const { error } = await supabase
+          .from('user_profiles')
+          .update({
+            language: selectedLanguage,
+            level: selectedLevel,
+            weekly_goal: selectedGoal,
+            has_completed_onboarding: true,
+            current_adaptive_level: adaptiveLevel,
+          })
+          .eq('user_id', authUserId);
+
+        if (error) throw error;
+
+        // Atualizar contexto local
+        updateUserProfile({
+          language: selectedLanguage,
+          level: selectedLevel,
+          weeklyGoal: selectedGoal,
+        });
+        setHasCompletedOnboarding(true);
+        
+        toast({
+          title: "Perfil configurado!",
+          description: "Vamos começar a praticar.",
+        });
+        
+        navigate('/home');
+      } catch (error) {
+        console.error('Error saving onboarding:', error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível salvar suas preferências. Tente novamente.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsSaving(false);
+      }
     }
   };
 
@@ -188,9 +237,23 @@ const Onboarding: React.FC = () => {
 
       {/* CTA Button */}
       <div className="px-6 pb-8">
-        <Button size="xl" className="w-full" onClick={handleNext}>
-          {step === 3 ? 'Começar a praticar' : 'Continuar'}
-          <ArrowRight className="w-5 h-5 ml-2" />
+        <Button size="xl" className="w-full" onClick={handleNext} disabled={isSaving}>
+          {isSaving ? (
+            <>
+              <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+              Salvando...
+            </>
+          ) : step === 3 ? (
+            <>
+              Começar a praticar
+              <ArrowRight className="w-5 h-5 ml-2" />
+            </>
+          ) : (
+            <>
+              Continuar
+              <ArrowRight className="w-5 h-5 ml-2" />
+            </>
+          )}
         </Button>
       </div>
     </div>
