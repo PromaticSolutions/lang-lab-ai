@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -106,14 +107,54 @@ const logStep = (step: string, details?: unknown) => {
   console.log(`[CHAT] ${step}${detailsStr}`);
 };
 
+// Authentication helper using getClaims
+async function authenticateUser(req: Request): Promise<{ userId: string } | Response> {
+  const authHeader = req.headers.get('Authorization');
+  
+  if (!authHeader?.startsWith('Bearer ')) {
+    return new Response(JSON.stringify({ error: 'Unauthorized - Missing token' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+    { global: { headers: { Authorization: authHeader } } }
+  );
+
+  const token = authHeader.replace('Bearer ', '');
+  const { data, error } = await supabase.auth.getClaims(token);
+
+  if (error || !data?.claims) {
+    logStep('Auth failed', { error: error?.message });
+    return new Response(JSON.stringify({ error: 'Unauthorized - Invalid token' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
+  const userId = data.claims.sub as string;
+  logStep('User authenticated', { userId });
+  return { userId };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    // Authenticate user
+    const authResult = await authenticateUser(req);
+    if (authResult instanceof Response) {
+      return authResult;
+    }
+    const { userId } = authResult;
+
     const { messages, scenarioId, userLevel, userLanguage, adaptiveLevel, includeInstantFeedback } = await req.json();
-    logStep("Request received", { scenarioId, userLevel, userLanguage, adaptiveLevel, messageCount: messages?.length });
+    logStep("Request received", { userId, scenarioId, userLevel, userLanguage, adaptiveLevel, messageCount: messages?.length });
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
