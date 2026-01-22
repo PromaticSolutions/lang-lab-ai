@@ -92,6 +92,33 @@ export type Database = {
         }
         Relationships: []
       }
+      user_achievements: {
+        Row: {
+          achievement_id: string
+          created_at: string
+          id: string
+          progress: number | null
+          unlocked_at: string
+          user_id: string
+        }
+        Insert: {
+          achievement_id: string
+          created_at?: string
+          id?: string
+          progress?: number | null
+          unlocked_at?: string
+          user_id: string
+        }
+        Update: {
+          achievement_id?: string
+          created_at?: string
+          id?: string
+          progress?: number | null
+          unlocked_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_credits: {
         Row: {
           created_at: string
@@ -137,11 +164,14 @@ export type Database = {
           average_score: number | null
           created_at: string
           current_adaptive_level: string | null
+          current_streak: number | null
           email: string | null
           has_completed_onboarding: boolean
           id: string
           language: string
+          last_practice_date: string | null
           level: string
+          longest_streak: number | null
           name: string
           plan: string
           total_conversations: number
@@ -154,11 +184,14 @@ export type Database = {
           average_score?: number | null
           created_at?: string
           current_adaptive_level?: string | null
+          current_streak?: number | null
           email?: string | null
           has_completed_onboarding?: boolean
           id?: string
           language?: string
+          last_practice_date?: string | null
           level?: string
+          longest_streak?: number | null
           name?: string
           plan?: string
           total_conversations?: number
@@ -171,11 +204,14 @@ export type Database = {
           average_score?: number | null
           created_at?: string
           current_adaptive_level?: string | null
+          current_streak?: number | null
           email?: string | null
           has_completed_onboarding?: boolean
           id?: string
           language?: string
+          last_practice_date?: string | null
           level?: string
+          longest_streak?: number | null
           name?: string
           plan?: string
           total_conversations?: number

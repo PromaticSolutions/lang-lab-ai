@@ -1,17 +1,114 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ConversationFeedback } from '@/types';
 import { scenarios } from '@/data/scenarios';
-import { ArrowLeft, Check, X, TrendingUp, Save, RotateCcw, ChevronRight } from 'lucide-react';
-import { HelpButton } from '@/components/HelpButton';
+import { ArrowLeft, Check, X, TrendingUp, RotateCcw, ChevronRight, Trophy, Home } from 'lucide-react';
+import { useApp } from '@/contexts/AppContext';
+import { useAchievements } from '@/hooks/useAchievements';
+import { useConversations } from '@/hooks/useConversations';
+import { supabase } from '@/integrations/supabase/client';
+import { AchievementCard } from '@/components/AchievementCard';
+import { achievements as allAchievements } from '@/data/achievements';
 
 const Feedback: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { feedback, scenarioId } = location.state as { feedback: ConversationFeedback; scenarioId: string };
+  const { authUserId } = useApp();
+  const { feedback, scenarioId, userLanguage } = location.state as { 
+    feedback: ConversationFeedback; 
+    scenarioId: string;
+    userLanguage?: string;
+  };
+  const { checkAchievements, achievements } = useAchievements(authUserId || undefined);
+  const { conversations } = useConversations(authUserId);
+  const [newAchievements, setNewAchievements] = useState<string[]>([]);
 
   const scenario = scenarios.find(s => s.id === scenarioId);
+
+  // Check for new achievements after conversation
+  useEffect(() => {
+    const checkForNewAchievements = async () => {
+      if (!authUserId) return;
+
+      // Get user stats from database
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('current_streak, longest_streak, total_conversations, current_adaptive_level')
+        .eq('user_id', authUserId)
+        .maybeSingle();
+
+      // Update stats in database
+      const today = new Date().toISOString().split('T')[0];
+      const { data: currentProfile } = await supabase
+        .from('user_profiles')
+        .select('last_practice_date, current_streak, longest_streak, total_conversations')
+        .eq('user_id', authUserId)
+        .maybeSingle();
+
+      let newStreak = 1;
+      if (currentProfile?.last_practice_date) {
+        const lastDate = new Date(currentProfile.last_practice_date);
+        const todayDate = new Date(today);
+        const diffDays = Math.floor((todayDate.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+        
+        if (diffDays === 0) {
+          newStreak = currentProfile.current_streak || 1;
+        } else if (diffDays === 1) {
+          newStreak = (currentProfile.current_streak || 0) + 1;
+        }
+      }
+
+      const longestStreak = Math.max(newStreak, currentProfile?.longest_streak || 0);
+      const totalConversations = (currentProfile?.total_conversations || 0) + 1;
+
+      await supabase
+        .from('user_profiles')
+        .update({
+          last_practice_date: today,
+          current_streak: newStreak,
+          longest_streak: longestStreak,
+          total_conversations: totalConversations,
+        })
+        .eq('user_id', authUserId);
+
+      // Get completed scenarios
+      const completedScenarios = [...new Set(conversations.map(c => c.scenarioId))];
+      if (!completedScenarios.includes(scenarioId)) {
+        completedScenarios.push(scenarioId);
+      }
+
+      // Get highest score
+      const allScores = conversations
+        .filter(c => c.feedback?.overallScore)
+        .map(c => c.feedback!.overallScore);
+      const highestScore = Math.max(feedback.overallScore, ...allScores, 0);
+
+      // Get unlocked achievements before checking
+      const previouslyUnlocked = achievements.filter(a => a.unlocked).map(a => a.id);
+
+      // Check achievements
+      await checkAchievements({
+        totalConversations,
+        currentStreak: newStreak,
+        longestStreak,
+        highestScore,
+        completedScenarios,
+        currentLevel: profile?.current_adaptive_level || feedback.estimatedLevel || 'A1',
+      });
+
+      // After a short delay, check for new achievements
+      setTimeout(() => {
+        const nowUnlocked = achievements.filter(a => a.unlocked).map(a => a.id);
+        const newlyUnlocked = nowUnlocked.filter(id => !previouslyUnlocked.includes(id));
+        if (newlyUnlocked.length > 0) {
+          setNewAchievements(newlyUnlocked);
+        }
+      }, 500);
+    };
+
+    checkForNewAchievements();
+  }, [authUserId, scenarioId, feedback, conversations]);
 
   const getScoreColor = (score: number) => {
     if (score >= 80) return 'text-success';
@@ -32,6 +129,11 @@ const Feedback: React.FC = () => {
     { label: 'Fluência', value: feedback.fluency },
     { label: 'Coerência', value: feedback.contextCoherence },
   ];
+
+  const newAchievementData = newAchievements.map(id => {
+    const achievement = allAchievements.find(a => a.id === id);
+    return achievement ? { ...achievement, unlocked: true, unlockedAt: new Date() } : null;
+  }).filter(Boolean);
 
   return (
     <div className="min-h-screen bg-background pb-8">
@@ -86,6 +188,21 @@ const Feedback: React.FC = () => {
         </div>
       </div>
 
+      {/* New Achievements */}
+      {newAchievementData.length > 0 && (
+        <div className="px-4 mt-6 max-w-3xl mx-auto">
+          <h2 className="text-lg font-bold text-foreground mb-3 flex items-center gap-2">
+            <Trophy className="w-5 h-5 text-yellow-500" />
+            Novas Conquistas!
+          </h2>
+          <div className="space-y-3">
+            {newAchievementData.map((achievement) => achievement && (
+              <AchievementCard key={achievement.id} achievement={achievement} />
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Errors Section */}
       <div className="px-4 mt-6 max-w-3xl mx-auto">
         <h2 className="text-lg font-bold text-foreground mb-3 flex items-center gap-2">
@@ -93,20 +210,24 @@ const Feedback: React.FC = () => {
           Principais Erros
         </h2>
         <div className="space-y-3">
-          {feedback.errors.map((error, index) => (
-            <div key={index} className="bg-card rounded-xl p-4 border border-border">
-              <div className="flex items-start gap-3">
-                <div className="w-6 h-6 rounded-full bg-destructive/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <X className="w-3 h-3 text-destructive" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm text-destructive line-through">{error.original}</p>
-                  <p className="text-sm text-success font-medium">{error.corrected}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{error.explanation}</p>
+          {feedback.errors.length > 0 ? (
+            feedback.errors.map((error, index) => (
+              <div key={index} className="bg-card rounded-xl p-4 border border-border">
+                <div className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-destructive/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <X className="w-3 h-3 text-destructive" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm text-destructive line-through">{error.original}</p>
+                    <p className="text-sm text-success font-medium">{error.corrected}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{error.explanation}</p>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))
+          ) : (
+            <p className="text-muted-foreground text-sm">Nenhum erro encontrado. Excelente trabalho!</p>
+          )}
         </div>
       </div>
 
@@ -117,14 +238,18 @@ const Feedback: React.FC = () => {
           O que você acertou
         </h2>
         <div className="space-y-2">
-          {feedback.correctPhrases.map((phrase, index) => (
-            <div key={index} className="bg-success/10 rounded-xl p-4 flex items-center gap-3">
-              <div className="w-6 h-6 rounded-full bg-success/20 flex items-center justify-center flex-shrink-0">
-                <Check className="w-3 h-3 text-success" />
+          {feedback.correctPhrases.length > 0 ? (
+            feedback.correctPhrases.map((phrase, index) => (
+              <div key={index} className="bg-success/10 rounded-xl p-4 flex items-center gap-3">
+                <div className="w-6 h-6 rounded-full bg-success/20 flex items-center justify-center flex-shrink-0">
+                  <Check className="w-3 h-3 text-success" />
+                </div>
+                <p className="text-sm text-foreground">{phrase}</p>
               </div>
-              <p className="text-sm text-foreground">{phrase}</p>
-            </div>
-          ))}
+            ))
+          ) : (
+            <p className="text-muted-foreground text-sm">Continue praticando para acertar mais!</p>
+          )}
         </div>
       </div>
 
@@ -135,22 +260,26 @@ const Feedback: React.FC = () => {
           O que melhorar
         </h2>
         <div className="space-y-2">
-          {feedback.improvements.map((improvement, index) => (
-            <div key={index} className="bg-fluency-light-blue rounded-xl p-4 flex items-center gap-3">
-              <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-                <ChevronRight className="w-3 h-3 text-primary" />
+          {feedback.improvements.length > 0 ? (
+            feedback.improvements.map((improvement, index) => (
+              <div key={index} className="bg-fluency-light-blue rounded-xl p-4 flex items-center gap-3">
+                <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                  <ChevronRight className="w-3 h-3 text-primary" />
+                </div>
+                <p className="text-sm text-foreground">{improvement}</p>
               </div>
-              <p className="text-sm text-foreground">{improvement}</p>
-            </div>
-          ))}
+            ))
+          ) : (
+            <p className="text-muted-foreground text-sm">Continue assim! Seu desempenho está ótimo.</p>
+          )}
         </div>
       </div>
 
       {/* Actions */}
       <div className="px-4 mt-8 space-y-3 max-w-3xl mx-auto">
-        <Button size="lg" className="w-full" onClick={() => navigate('/history')}>
-          <Save className="w-5 h-5 mr-2" />
-          Salvar conversa
+        <Button size="lg" className="w-full" onClick={() => navigate('/home')}>
+          <Home className="w-5 h-5 mr-2" />
+          Voltar ao início
         </Button>
         <Button 
           variant="outline" 
@@ -162,8 +291,6 @@ const Feedback: React.FC = () => {
           Tentar novamente
         </Button>
       </div>
-
-      <HelpButton />
     </div>
   );
 };
