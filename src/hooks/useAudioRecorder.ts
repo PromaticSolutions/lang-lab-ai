@@ -3,11 +3,12 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface UseAudioRecorderOptions {
   onTranscription?: (text: string) => void;
+  onAutoSend?: (text: string) => void; // Called for auto-send after stop
   onError?: (error: string) => void;
   language?: string;
 }
 
-export function useAudioRecorder({ onTranscription, onError, language = 'english' }: UseAudioRecorderOptions = {}) {
+export function useAudioRecorder({ onTranscription, onAutoSend, onError, language = 'english' }: UseAudioRecorderOptions = {}) {
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
@@ -17,6 +18,11 @@ export function useAudioRecorder({ onTranscription, onError, language = 'english
 
   const startRecording = useCallback(async () => {
     try {
+      // Haptic feedback on mobile
+      if ('vibrate' in navigator) {
+        navigator.vibrate(50);
+      }
+      
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
           echoCancellation: true,
@@ -41,13 +47,18 @@ export function useAudioRecorder({ onTranscription, onError, language = 'english
       };
 
       mediaRecorder.onstop = async () => {
+        // Haptic feedback when stopping
+        if ('vibrate' in navigator) {
+          navigator.vibrate([30, 50, 30]);
+        }
+        
         const blob = new Blob(chunksRef.current, { type: mimeType });
         setAudioBlob(blob);
         
         // Stop all tracks
         stream.getTracks().forEach(track => track.stop());
         
-        // Auto transcribe
+        // Auto transcribe and send
         await transcribeAudio(blob);
       };
 
@@ -97,14 +108,19 @@ export function useAudioRecorder({ onTranscription, onError, language = 'english
         body: { 
           audio: base64Audio, 
           mimeType: blob.type,
-          language: language // Pass language for accurate transcription
+          language: language
         }
       });
 
       if (error) throw error;
       
       if (data?.text) {
-        onTranscription?.(data.text);
+        // Call onAutoSend if provided (for auto-send behavior)
+        if (onAutoSend) {
+          onAutoSend(data.text);
+        } else if (onTranscription) {
+          onTranscription(data.text);
+        }
       } else {
         onError?.('Não foi possível transcrever o áudio. Tente novamente.');
       }
