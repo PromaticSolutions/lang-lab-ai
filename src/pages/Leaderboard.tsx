@@ -81,19 +81,20 @@ const Leaderboard: React.FC = () => {
   const [isInvitingFriend, setIsInvitingFriend] = useState(false);
   const [isJoiningGroup, setIsJoiningGroup] = useState(false);
 
-  // Fetch global ranking
+  // Fetch global ranking using secure view (excludes sensitive data like email)
   const fetchGlobalRanking = useCallback(async () => {
     if (!authUserId) return;
     setIsLoadingGlobal(true);
     try {
       const { data, error } = await supabase
-        .from('user_profiles')
-        .select('user_id, name, avatar_url, total_conversations, current_streak, longest_streak, current_adaptive_level')
+        .from('user_rankings')
+        .select('user_id, name, total_conversations, current_streak, longest_streak, current_adaptive_level')
         .order('total_conversations', { ascending: false })
         .limit(50);
 
       if (error) throw error;
-      setGlobalRanking((data || []) as RankingUser[]);
+      // Map to RankingUser with null avatar_url (not exposed in view for privacy)
+      setGlobalRanking((data || []).map(d => ({ ...d, avatar_url: null })) as RankingUser[]);
     } catch (error) {
       console.error('Error fetching global ranking:', error);
       toast({
@@ -124,23 +125,24 @@ const Leaderboard: React.FC = () => {
           f.user_id === authUserId ? f.friend_id : f.user_id
         );
         
+        // Use secure view for friends ranking (excludes email, exposes only ranking data)
         const { data: profiles, error: profilesError } = await supabase
-          .from('user_profiles')
-          .select('user_id, name, avatar_url, total_conversations, current_streak, longest_streak, current_adaptive_level')
+          .from('user_rankings')
+          .select('user_id, name, total_conversations, current_streak, longest_streak, current_adaptive_level')
           .in('user_id', [...friendIds, authUserId])
           .order('total_conversations', { ascending: false });
         
         if (profilesError) throw profilesError;
-        setFriendsRanking((profiles || []) as RankingUser[]);
+        setFriendsRanking((profiles || []).map(d => ({ ...d, avatar_url: null })) as RankingUser[]);
       } else {
         // Only show current user if no friends
         const { data: myProfile } = await supabase
-          .from('user_profiles')
-          .select('user_id, name, avatar_url, total_conversations, current_streak, longest_streak, current_adaptive_level')
+          .from('user_rankings')
+          .select('user_id, name, total_conversations, current_streak, longest_streak, current_adaptive_level')
           .eq('user_id', authUserId)
           .single();
         
-        setFriendsRanking(myProfile ? [myProfile as RankingUser] : []);
+        setFriendsRanking(myProfile ? [{ ...myProfile, avatar_url: null } as RankingUser] : []);
       }
     } catch (error) {
       console.error('Error fetching friends ranking:', error);
