@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,10 +14,43 @@ const languageNames: Record<string, { name: string; nativeName: string }> = {
   german: { name: "German", nativeName: "alemão" },
 };
 
-const logStep = (step: string, details?: any) => {
+const logStep = (step: string, details?: unknown) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
   console.log(`[ANALYZE] ${step}${detailsStr}`);
 };
+
+// Authentication helper using getClaims
+async function authenticateUser(req: Request): Promise<{ userId: string } | Response> {
+  const authHeader = req.headers.get('Authorization');
+  
+  if (!authHeader?.startsWith('Bearer ')) {
+    return new Response(JSON.stringify({ error: 'Unauthorized - Missing token' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+    { global: { headers: { Authorization: authHeader } } }
+  );
+
+  const token = authHeader.replace('Bearer ', '');
+  const { data, error } = await supabase.auth.getClaims(token);
+
+  if (error || !data?.claims) {
+    logStep('Auth failed', { error: error?.message });
+    return new Response(JSON.stringify({ error: 'Unauthorized - Invalid token' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
+  const userId = data.claims.sub as string;
+  logStep('User authenticated', { userId });
+  return { userId };
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -24,8 +58,15 @@ serve(async (req) => {
   }
 
   try {
+    // Authenticate user
+    const authResult = await authenticateUser(req);
+    if (authResult instanceof Response) {
+      return authResult;
+    }
+    const { userId } = authResult;
+
     const { messages, scenarioId, userLevel, userLanguage } = await req.json();
-    logStep("Request received", { scenarioId, userLevel, userLanguage, messageCount: messages?.length });
+    logStep("Request received", { userId, scenarioId, userLevel, userLanguage, messageCount: messages?.length });
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
@@ -35,8 +76,8 @@ serve(async (req) => {
     const language = userLanguage || 'english';
     const langInfo = languageNames[language] || languageNames.english;
 
-    const userMessages = messages.filter((m: any) => m.role === 'user').map((m: any) => m.content);
-    const conversationText = messages.map((m: any) => `${m.role === 'user' ? 'Student' : 'AI'}: ${m.content}`).join('\n');
+    const userMessages = messages.filter((m: { role: string }) => m.role === 'user').map((m: { content: string }) => m.content);
+    const conversationText = messages.map((m: { role: string; content: string }) => `${m.role === 'user' ? 'Student' : 'AI'}: ${m.content}`).join('\n');
 
     const systemPrompt = `Você é um professor de ${langInfo.nativeName} especializado em análise de conversação. Analise a conversa do aluno praticando ${langInfo.nativeName} e forneça feedback detalhado e construtivo.
 

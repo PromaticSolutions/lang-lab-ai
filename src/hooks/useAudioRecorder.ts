@@ -90,6 +90,12 @@ export function useAudioRecorder({ onTranscription, onAutoSend, onError, languag
     setIsTranscribing(true);
     
     try {
+      // Get user session token for authentication
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error('Sessão expirada. Faça login novamente.');
+      }
+
       // Convert blob to base64
       const reader = new FileReader();
       const base64Promise = new Promise<string>((resolve, reject) => {
@@ -104,15 +110,31 @@ export function useAudioRecorder({ onTranscription, onAutoSend, onError, languag
       
       const base64Audio = await base64Promise;
 
-      const { data, error } = await supabase.functions.invoke('speech-to-text', {
-        body: { 
+      // Call edge function with user's access token
+      const STT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/speech-to-text`;
+      
+      const response = await fetch(STT_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ 
           audio: base64Audio, 
           mimeType: blob.type,
           language: language
-        }
+        }),
       });
 
-      if (error) throw error;
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Sessão expirada. Faça login novamente.');
+        }
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erro na transcrição');
+      }
+
+      const data = await response.json();
       
       if (data?.text) {
         // Call onAutoSend if provided (for auto-send behavior)
@@ -126,7 +148,8 @@ export function useAudioRecorder({ onTranscription, onAutoSend, onError, languag
       }
     } catch (error) {
       console.error('Transcription error:', error);
-      onError?.('Erro ao transcrever o áudio.');
+      const errorMessage = error instanceof Error ? error.message : 'Erro ao transcrever o áudio.';
+      onError?.(errorMessage);
     } finally {
       setIsTranscribing(false);
     }

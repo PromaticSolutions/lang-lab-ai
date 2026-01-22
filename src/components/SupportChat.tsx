@@ -101,11 +101,22 @@ export function SupportChat({ isOpen, onClose }: SupportChatProps) {
     setIsLoading(true);
 
     try {
+      // Get user session token for authentication
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        toast({
+          title: "Sessão expirada",
+          description: "Faça login novamente.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const response = await fetch(SUPPORT_CHAT_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          'Authorization': `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
           messages: newMessages.map(m => ({ role: m.role, content: m.content })),

@@ -1,9 +1,48 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+const logStep = (step: string, details?: unknown) => {
+  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
+  console.log(`[SUPPORT] ${step}${detailsStr}`);
+};
+
+// Authentication helper using getClaims
+async function authenticateUser(req: Request): Promise<{ userId: string } | Response> {
+  const authHeader = req.headers.get('Authorization');
+  
+  if (!authHeader?.startsWith('Bearer ')) {
+    return new Response(JSON.stringify({ error: 'Unauthorized - Missing token' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+    { global: { headers: { Authorization: authHeader } } }
+  );
+
+  const token = authHeader.replace('Bearer ', '');
+  const { data, error } = await supabase.auth.getClaims(token);
+
+  if (error || !data?.claims) {
+    logStep('Auth failed', { error: error?.message });
+    return new Response(JSON.stringify({ error: 'Unauthorized - Invalid token' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
+  const userId = data.claims.sub as string;
+  logStep('User authenticated', { userId });
+  return { userId };
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -11,7 +50,16 @@ serve(async (req) => {
   }
 
   try {
+    // Authenticate user
+    const authResult = await authenticateUser(req);
+    if (authResult instanceof Response) {
+      return authResult;
+    }
+    const { userId } = authResult;
+
     const { messages, userName, ticketId } = await req.json();
+    logStep('Request received', { userId, ticketId, messageCount: messages?.length });
+    
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
@@ -76,19 +124,22 @@ Se o problema persistir após 3 tentativas de ajuda, sugira contato via WhatsApp
         });
       }
       const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
+      logStep("AI gateway error", { status: response.status, error: errorText });
       return new Response(JSON.stringify({ error: "Erro no serviço de IA" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
+    logStep('Streaming response');
+
     return new Response(response.body, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
   } catch (error) {
-    console.error("Support chat error:", error);
-    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "Erro desconhecido" }), {
+    const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
+    logStep("ERROR", { message: errorMessage });
+    return new Response(JSON.stringify({ error: errorMessage }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

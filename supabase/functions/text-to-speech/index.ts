@@ -1,8 +1,14 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+const logStep = (step: string, details?: unknown) => {
+  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
+  console.log(`[TTS] ${step}${detailsStr}`);
 };
 
 // Map language to appropriate ElevenLabs voice
@@ -17,12 +23,52 @@ function getVoiceForLanguage(language: string): string {
   return voiceMap[language?.toLowerCase()] || 'JBFqnCBsd6RMkjVDRZzb';
 }
 
+// Authentication helper using getClaims
+async function authenticateUser(req: Request): Promise<{ userId: string } | Response> {
+  const authHeader = req.headers.get('Authorization');
+  
+  if (!authHeader?.startsWith('Bearer ')) {
+    return new Response(JSON.stringify({ error: 'Unauthorized - Missing token' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+    { global: { headers: { Authorization: authHeader } } }
+  );
+
+  const token = authHeader.replace('Bearer ', '');
+  const { data, error } = await supabase.auth.getClaims(token);
+
+  if (error || !data?.claims) {
+    logStep('Auth failed', { error: error?.message });
+    return new Response(JSON.stringify({ error: 'Unauthorized - Invalid token' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
+  const userId = data.claims.sub as string;
+  logStep('User authenticated', { userId });
+  return { userId };
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    // Authenticate user
+    const authResult = await authenticateUser(req);
+    if (authResult instanceof Response) {
+      return authResult;
+    }
+    const { userId } = authResult;
+
     const { text, language = 'english' } = await req.json();
     
     if (!text) {
@@ -38,12 +84,10 @@ serve(async (req) => {
       throw new Error("ELEVENLABS_API_KEY não configurada");
     }
 
-    console.log('[TTS] Generating speech with ElevenLabs');
-    console.log('[TTS] Text length:', text.length);
-    console.log('[TTS] Language:', language);
+    logStep('Generating speech with ElevenLabs', { userId, textLength: text.length, language });
 
     const voiceId = getVoiceForLanguage(language);
-    console.log('[TTS] Voice ID:', voiceId);
+    logStep('Voice selected', { voiceId });
 
     // Call ElevenLabs TTS API directly
     const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream`, {
@@ -67,11 +111,11 @@ serve(async (req) => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('[TTS] ElevenLabs error:', response.status, errorText);
+      logStep('ElevenLabs error', { status: response.status, error: errorText });
       throw new Error(`TTS error: ${response.status}`);
     }
 
-    console.log('[TTS] Streaming response');
+    logStep('Streaming response');
 
     // Stream the response directly
     return new Response(response.body, {
@@ -82,9 +126,10 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error("[TTS] Error:", error);
+    const errorMessage = error instanceof Error ? error.message : 'Erro ao gerar áudio';
+    logStep("ERROR", { message: errorMessage });
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Erro ao gerar áudio' }),
+      JSON.stringify({ error: errorMessage }),
       {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
