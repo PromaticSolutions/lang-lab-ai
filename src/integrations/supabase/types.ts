@@ -345,7 +345,36 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      user_rankings: {
+        Row: {
+          average_score: number | null
+          current_adaptive_level: string | null
+          current_streak: number | null
+          longest_streak: number | null
+          name: string | null
+          total_conversations: number | null
+          user_id: string | null
+        }
+        Insert: {
+          average_score?: number | null
+          current_adaptive_level?: string | null
+          current_streak?: number | null
+          longest_streak?: number | null
+          name?: string | null
+          total_conversations?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          average_score?: number | null
+          current_adaptive_level?: string | null
+          current_streak?: number | null
+          longest_streak?: number | null
+          name?: string | null
+          total_conversations?: number | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never
