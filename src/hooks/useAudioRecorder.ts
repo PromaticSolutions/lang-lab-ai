@@ -4,9 +4,10 @@ import { supabase } from '@/integrations/supabase/client';
 interface UseAudioRecorderOptions {
   onTranscription?: (text: string) => void;
   onError?: (error: string) => void;
+  language?: string;
 }
 
-export function useAudioRecorder({ onTranscription, onError }: UseAudioRecorderOptions = {}) {
+export function useAudioRecorder({ onTranscription, onError, language = 'english' }: UseAudioRecorderOptions = {}) {
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
@@ -93,7 +94,11 @@ export function useAudioRecorder({ onTranscription, onError }: UseAudioRecorderO
       const base64Audio = await base64Promise;
 
       const { data, error } = await supabase.functions.invoke('speech-to-text', {
-        body: { audio: base64Audio, mimeType: blob.type }
+        body: { 
+          audio: base64Audio, 
+          mimeType: blob.type,
+          language: language // Pass language for accurate transcription
+        }
       });
 
       if (error) throw error;

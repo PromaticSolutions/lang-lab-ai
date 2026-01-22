@@ -122,6 +122,7 @@ const Chat: React.FC = () => {
   const { speak, stop, isSpeaking, isSupported: isSpeechSupported } = useSpeechSynthesis({ lang: speechCode, rate: 0.9 });
 
   const { isRecording, isTranscribing, startRecording, stopRecording, cancelRecording } = useAudioRecorder({
+    language: userLanguage, // Pass user's learning language for accurate transcription
     onTranscription: (text) => {
       if (text.trim()) {
         setInputValue(text);
