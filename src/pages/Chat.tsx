@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,7 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAudioRecorder } from '@/hooks/useAudioRecorder';
 import { useCredits } from '@/hooks/useCredits';
 import { useConversations } from '@/hooks/useConversations';
-import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
+import { useElevenLabsTTS } from '@/hooks/useElevenLabsTTS';
 import { CreditsDisplay } from '@/components/CreditsDisplay';
 import { HelpButton } from '@/components/HelpButton';
 
@@ -71,15 +71,6 @@ const scenarioInitialMessages: Record<string, Record<string, string>> = {
   },
 };
 
-// Mapeamento de idioma para código de voz
-const languageToSpeechCode: Record<string, string> = {
-  english: 'en-US',
-  spanish: 'es-ES',
-  french: 'fr-FR',
-  italian: 'it-IT',
-  german: 'de-DE',
-};
-
 interface InstantFeedback {
   tip: string;
   type: 'tip' | 'praise';
@@ -94,7 +85,7 @@ const Chat: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [instantFeedbacks, setInstantFeedbacks] = useState<Record<string, InstantFeedback>>({});
   const [inputValue, setInputValue] = useState('');
-  const [isFromAudio, setIsFromAudio] = useState(false); // Track if current input is from audio
+  const [pendingAudioMessage, setPendingAudioMessage] = useState<string | null>(null);
   const [isTyping, setIsTyping] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showTranslation, setShowTranslation] = useState<string | null>(null);
@@ -112,27 +103,31 @@ const Chat: React.FC = () => {
     getUser();
   }, []);
 
-  // Audio permission is now handled by canSendAudio() from useCredits hook
   const userLanguage = (user?.language || 'english') as Language;
-  const speechCode = languageToSpeechCode[userLanguage] || 'en-US';
 
   // Hooks for credits, conversations, and speech
   const { credits, useCredit, useAudioCredit, canSendMessage, canSendAudio, hasUnlimitedCredits } = useCredits(authUserId, user?.plan);
   const { saveConversation } = useConversations(authUserId);
-  const { speak, stop, isSpeaking, isSupported: isSpeechSupported } = useSpeechSynthesis({ lang: speechCode, rate: 0.9 });
+  
+  // ElevenLabs TTS - humanized voice
+  const { speak, stop, isSpeaking, isLoading: isTTSLoading } = useElevenLabsTTS({ 
+    language: userLanguage,
+    onError: (error) => {
+      console.error('TTS error:', error);
+      // Fallback silently - don't show error to user
+    }
+  });
+
+  // Handle auto-send after transcription
+  const handleAutoSendAudio = useCallback((text: string) => {
+    if (text.trim()) {
+      setPendingAudioMessage(text);
+    }
+  }, []);
 
   const { isRecording, isTranscribing, startRecording, stopRecording, cancelRecording } = useAudioRecorder({
-    language: userLanguage, // Pass user's learning language for accurate transcription
-    onTranscription: (text) => {
-      if (text.trim()) {
-        setInputValue(text);
-        setIsFromAudio(true); // Mark that this input came from audio
-        toast({
-          title: "Áudio transcrito",
-          description: "Sua mensagem foi convertida em texto.",
-        });
-      }
-    },
+    language: userLanguage,
+    onAutoSend: handleAutoSendAudio, // Auto-send after transcription
     onError: (error) => {
       toast({
         title: "Erro no áudio",
@@ -142,9 +137,17 @@ const Chat: React.FC = () => {
     }
   });
 
+  // Process pending audio message
+  useEffect(() => {
+    if (pendingAudioMessage && !isTyping && !isTranscribing) {
+      handleSendAudioMessage(pendingAudioMessage);
+      setPendingAudioMessage(null);
+    }
+  }, [pendingAudioMessage, isTyping, isTranscribing]);
+
   const scenario = scenarios.find(s => s.id === scenarioId);
 
-  // Enforce scenario access rules (prevents opening locked scenarios by direct URL)
+  // Enforce scenario access rules
   useEffect(() => {
     if (!scenario || !user) return;
     if (isScenarioLocked(scenario, user.plan)) {
@@ -159,7 +162,6 @@ const Chat: React.FC = () => {
 
   useEffect(() => {
     if (scenario && messages.length === 0) {
-      // Pegar mensagem inicial no idioma correto
       const languageMessages = scenarioInitialMessages[userLanguage] || scenarioInitialMessages.english;
       const initialContent = languageMessages[scenario.id] || languageMessages.interview || "Hello! Let's practice together.";
       
@@ -172,7 +174,7 @@ const Chat: React.FC = () => {
       setMessages([initialMessage]);
       
       // Speak initial message if voice is enabled
-      if (voiceEnabled && isSpeechSupported) {
+      if (voiceEnabled) {
         speak(initialMessage.content);
       }
     }
@@ -182,7 +184,7 @@ const Chat: React.FC = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Função para extrair feedback instantâneo da resposta
+  // Parse feedback from response
   const parseResponseWithFeedback = (content: string): { mainResponse: string; feedback: InstantFeedback | null } => {
     const separator = '---';
     const parts = content.split(separator);
@@ -196,7 +198,6 @@ const Chat: React.FC = () => {
         feedbackType = 'praise';
       }
       
-      // Remove emoji prefixes for cleaner display
       const cleanFeedback = feedbackPart
         .replace(/^💡\s*Dica:\s*/i, '')
         .replace(/^✨\s*/i, '')
@@ -213,56 +214,81 @@ const Chat: React.FC = () => {
     return { mainResponse: content, feedback: null };
   };
 
-  const handleSendMessage = async () => {
-    if (!inputValue.trim() || isTyping) return;
+  const handleSendAudioMessage = async (audioText: string) => {
+    if (!audioText.trim() || isTyping) return;
 
-    const wasFromAudio = isFromAudio;
-    console.log('[Chat] Sending message:', { wasFromAudio, hasUnlimitedCredits, credits });
-    
-    // Check credits before sending
+    // Check credits
     if (!canSendMessage()) {
-      console.log('[Chat] Cannot send message - no credits');
       toast({
         title: "Sem créditos",
         description: credits?.is_trial_expired 
-          ? "Seu período de trial expirou. Faça upgrade para continuar." 
-          : "Você atingiu o limite de mensagens. Faça upgrade para continuar.",
+          ? "Seu período de trial expirou." 
+          : "Limite de mensagens atingido.",
         variant: "destructive",
       });
       navigate('/plans');
       return;
     }
 
-    // Deduct appropriate credit (audio or regular)
-    let creditUsed: boolean;
-    if (wasFromAudio && !hasUnlimitedCredits) {
-      console.log('[Chat] Using audio credit');
-      creditUsed = await useAudioCredit(); // Uses both message + audio credit
-    } else {
-      console.log('[Chat] Using regular credit');
-      creditUsed = await useCredit();
+    // Deduct audio credit
+    if (!hasUnlimitedCredits) {
+      const creditUsed = await useAudioCredit();
+      if (!creditUsed) {
+        toast({
+          title: "Erro",
+          description: "Não foi possível processar sua mensagem.",
+          variant: "destructive",
+        });
+        return;
+      }
     }
-    
-    if (!creditUsed && !hasUnlimitedCredits) {
-      console.log('[Chat] Failed to use credit');
+
+    await sendMessage(audioText);
+  };
+
+  const handleSendMessage = async () => {
+    if (!inputValue.trim() || isTyping) return;
+
+    // Check credits
+    if (!canSendMessage()) {
       toast({
-        title: "Erro",
-        description: "Não foi possível processar sua mensagem.",
+        title: "Sem créditos",
+        description: credits?.is_trial_expired 
+          ? "Seu período de trial expirou." 
+          : "Limite de mensagens atingido.",
         variant: "destructive",
       });
+      navigate('/plans');
       return;
     }
 
+    // Deduct regular credit
+    if (!hasUnlimitedCredits) {
+      const creditUsed = await useCredit();
+      if (!creditUsed) {
+        toast({
+          title: "Erro",
+          description: "Não foi possível processar sua mensagem.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    const text = inputValue;
+    setInputValue('');
+    await sendMessage(text);
+  };
+
+  const sendMessage = async (text: string) => {
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
-      content: inputValue,
+      content: text,
       timestamp: new Date(),
     };
 
     setMessages(prev => [...prev, userMessage]);
-    setInputValue('');
-    setIsFromAudio(false); // Reset audio flag
     setIsTyping(true);
 
     try {
@@ -271,7 +297,7 @@ const Chat: React.FC = () => {
         content: m.content,
       }));
 
-      // Buscar nível adaptativo do perfil
+      // Get adaptive level
       let adaptiveLevel = null;
       if (authUserId) {
         const { data: profileData } = await supabase
@@ -294,7 +320,7 @@ const Chat: React.FC = () => {
           userLevel: user?.level || 'intermediate',
           userLanguage: userLanguage,
           adaptiveLevel: adaptiveLevel,
-          includeInstantFeedback: true, // Habilitar feedback instantâneo
+          includeInstantFeedback: true,
         }),
       });
 
@@ -342,7 +368,6 @@ const Chat: React.FC = () => {
               if (content) {
                 assistantContent += content;
                 
-                // Parse and separate feedback during streaming
                 const { mainResponse } = parseResponseWithFeedback(assistantContent);
                 
                 setMessages(prev => prev.map(m => 
@@ -358,17 +383,15 @@ const Chat: React.FC = () => {
         }
       }
 
-      // Final parse to extract feedback
+      // Final parse
       const { mainResponse, feedback } = parseResponseWithFeedback(assistantContent);
       
-      // Update message with clean content
       setMessages(prev => prev.map(m => 
         m.id === assistantMessageId 
           ? { ...m, content: mainResponse }
           : m
       ));
       
-      // Store feedback separately
       if (feedback) {
         setInstantFeedbacks(prev => ({
           ...prev,
@@ -376,8 +399,8 @@ const Chat: React.FC = () => {
         }));
       }
 
-      // Speak assistant response if voice is enabled
-      if (voiceEnabled && isSpeechSupported && mainResponse) {
+      // Speak assistant response with ElevenLabs
+      if (voiceEnabled && mainResponse) {
         speak(mainResponse);
       }
     } catch (error) {
@@ -397,7 +420,7 @@ const Chat: React.FC = () => {
     if (messages.length < 3) {
       toast({
         title: "Conversa muito curta",
-        description: "Continue a conversa para receber um feedback mais completo.",
+        description: "Continue a conversa para receber feedback mais completo.",
         variant: "destructive",
       });
       return;
@@ -411,7 +434,7 @@ const Chat: React.FC = () => {
           messages: messages.map(m => ({ role: m.role, content: m.content })),
           scenarioId,
           userLevel: user?.level || 'intermediate',
-          userLanguage: userLanguage, // Passar o idioma para análise correta
+          userLanguage: userLanguage,
         },
       });
 
@@ -440,7 +463,6 @@ const Chat: React.FC = () => {
         feedback,
       };
 
-      // Save to database
       await saveConversation(conversation);
       
       navigate('/feedback', { state: { feedback, scenarioId, userLanguage } });
@@ -448,7 +470,7 @@ const Chat: React.FC = () => {
       console.error('Analysis error:', error);
       toast({
         title: "Erro na análise",
-        description: "Não foi possível analisar a conversa. Tente novamente.",
+        description: "Não foi possível analisar a conversa.",
         variant: "destructive",
       });
     } finally {
@@ -469,14 +491,11 @@ const Chat: React.FC = () => {
   };
 
   const handleMicClick = () => {
-    // Check if user has audio credits (for free trial users)
-    if (!canSendAudio()) {
-      const message = credits?.remaining_audio_credits === 0
-        ? "Você usou todos os seus créditos de áudio. Faça upgrade para áudios ilimitados."
-        : "Faça upgrade para usar áudio.";
+    // Check audio credits
+    if (!isRecording && !canSendAudio()) {
       toast({
-        title: "Limite de áudio atingido",
-        description: message,
+        title: "Limite de áudio",
+        description: "Faça upgrade para áudios ilimitados.",
         variant: "destructive",
       });
       navigate('/plans');
@@ -484,7 +503,7 @@ const Chat: React.FC = () => {
     }
 
     if (isRecording) {
-      stopRecording();
+      stopRecording(); // Will auto-transcribe and auto-send
     } else {
       startRecording();
     }
@@ -508,7 +527,7 @@ const Chat: React.FC = () => {
       title: voiceEnabled ? "Voz desativada" : "Voz ativada",
       description: voiceEnabled 
         ? "A IA não falará mais as respostas." 
-        : `A IA falará as respostas em ${languageNames[userLanguage] || 'inglês'}.`,
+        : `A IA falará em ${languageNames[userLanguage] || 'inglês'} com voz natural.`,
     });
   };
 
@@ -540,31 +559,12 @@ const Chat: React.FC = () => {
         <div className="flex-1 min-w-0">
           <h1 className="font-semibold text-foreground truncate">{scenario.title}</h1>
           <p className="text-xs text-muted-foreground">
-            {isTyping ? 'Digitando...' : isRecording ? 'Gravando...' : isSpeaking ? 'Falando...' : 'Online'}
+            {isTyping ? 'Digitando...' : isRecording ? 'Gravando...' : isTranscribing ? 'Processando...' : isSpeaking || isTTSLoading ? 'Falando...' : 'Online'}
           </p>
         </div>
         
-        {/* Voice toggle button */}
-        {isSpeechSupported && (
-          <button 
-            onClick={toggleVoice}
-            className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
-              voiceEnabled ? 'bg-primary text-primary-foreground' : 'hover:bg-muted text-muted-foreground'
-            }`}
-            title={voiceEnabled ? "Desativar voz" : "Ativar voz"}
-          >
-            {voiceEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
-          </button>
-        )}
-        
-        <button className="w-10 h-10 rounded-xl hover:bg-muted flex items-center justify-center shrink-0">
-          <MoreVertical className="w-5 h-5 text-muted-foreground" />
-        </button>
-      </div>
-
-      {/* Credits Display */}
-      {credits && (
-        <div className="px-4 py-2 border-b border-border bg-card/50">
+        {/* Credits - compact in header */}
+        {credits && (
           <CreditsDisplay
             totalCredits={credits.total_credits}
             usedCredits={credits.used_credits}
@@ -575,9 +575,25 @@ const Chat: React.FC = () => {
             trialEndsAt={credits.trial_ends_at}
             isExpired={credits.is_trial_expired}
             hasUnlimitedCredits={hasUnlimitedCredits}
+            compact
           />
-        </div>
-      )}
+        )}
+        
+        {/* Voice toggle button */}
+        <button 
+          onClick={toggleVoice}
+          className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+            voiceEnabled ? 'bg-primary text-primary-foreground' : 'hover:bg-muted text-muted-foreground'
+          }`}
+          title={voiceEnabled ? "Desativar voz" : "Ativar voz"}
+        >
+          {voiceEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+        </button>
+        
+        <button className="w-10 h-10 rounded-xl hover:bg-muted flex items-center justify-center shrink-0">
+          <MoreVertical className="w-5 h-5 text-muted-foreground" />
+        </button>
+      </div>
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-3 py-4 space-y-3 sm:px-4">
@@ -606,14 +622,12 @@ const Chat: React.FC = () => {
                       >
                         <Languages className="w-4 h-4" />
                       </button>
-                      {isSpeechSupported && (
-                        <button
-                          onClick={() => handleSpeakMessage(message.content)}
-                          className={`text-xs hover:underline ${isSpeaking ? 'text-primary' : 'text-muted-foreground'}`}
-                        >
-                          <Volume2 className="w-4 h-4" />
-                        </button>
-                      )}
+                      <button
+                        onClick={() => handleSpeakMessage(message.content)}
+                        className={`text-xs hover:underline ${isSpeaking ? 'text-primary' : 'text-muted-foreground'}`}
+                      >
+                        <Volume2 className="w-4 h-4" />
+                      </button>
                     </>
                   )}
                 </div>
@@ -653,12 +667,12 @@ const Chat: React.FC = () => {
 
       {/* Recording indicator */}
       {isRecording && (
-        <div className="px-4 py-2 bg-destructive/10 border-t border-destructive/20 flex items-center justify-between">
+        <div className="px-4 py-3 bg-destructive/10 border-t border-destructive/20 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="w-3 h-3 bg-destructive rounded-full animate-pulse" />
-            <span className="text-sm text-destructive font-medium">Gravando...</span>
+            <span className="text-sm text-destructive font-medium">Gravando... Toque para enviar</span>
           </div>
-          <Button variant="ghost" size="sm" onClick={cancelRecording}>
+          <Button variant="ghost" size="sm" onClick={cancelRecording} className="text-destructive">
             <X className="w-4 h-4 mr-1" />
             Cancelar
           </Button>
@@ -667,9 +681,9 @@ const Chat: React.FC = () => {
 
       {/* Transcribing indicator */}
       {isTranscribing && (
-        <div className="px-4 py-2 bg-primary/10 border-t border-primary/20 flex items-center gap-2">
+        <div className="px-4 py-3 bg-primary/10 border-t border-primary/20 flex items-center gap-2">
           <Loader2 className="w-4 h-4 animate-spin text-primary" />
-          <span className="text-sm text-primary font-medium">Transcrevendo áudio...</span>
+          <span className="text-sm text-primary font-medium">Enviando mensagem...</span>
         </div>
       )}
 
@@ -686,12 +700,12 @@ const Chat: React.FC = () => {
             />
           </div>
           
-          {/* Mic button - more visible */}
+          {/* Mic button */}
           <Button 
             size="icon" 
             variant={isRecording ? "destructive" : "outline"}
             onClick={handleMicClick}
-            disabled={isTranscribing}
+            disabled={isTranscribing || isTyping}
             className={`shrink-0 ${isRecording ? 'animate-pulse' : 'border-primary text-primary hover:bg-primary hover:text-primary-foreground'}`}
           >
             {isRecording ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
@@ -724,6 +738,7 @@ const Chat: React.FC = () => {
         </Button>
       </div>
 
+      {/* Help Button - now visible in chat */}
       <HelpButton />
     </div>
   );
