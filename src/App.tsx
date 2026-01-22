@@ -25,12 +25,14 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-// Pages where HelpButton should NOT appear (public/unauthenticated pages)
+// Pages where HelpButton should NOT appear
 const noHelpButtonRoutes = ['/', '/landing', '/splash', '/welcome', '/auth'];
 
 function AppRoutes() {
   const location = useLocation();
-  const showHelpButton = !noHelpButtonRoutes.includes(location.pathname);
+  // Hide on public pages AND on chat pages
+  const isChatPage = location.pathname.startsWith('/chat/');
+  const showHelpButton = !noHelpButtonRoutes.includes(location.pathname) && !isChatPage;
 
   return (
     <>

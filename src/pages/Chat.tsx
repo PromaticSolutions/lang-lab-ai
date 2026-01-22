@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { useApp } from '@/contexts/AppContext';
 import { scenarios, isScenarioLocked } from '@/data/scenarios';
 import { Message, Conversation, ConversationFeedback, Language } from '@/types';
-import { ArrowLeft, Send, Mic, MicOff, Languages, MoreVertical, Loader2, X, Volume2, VolumeX, Lightbulb } from 'lucide-react';
+import { ArrowLeft, Send, Mic, MicOff, Languages, MoreVertical, Loader2, X, Volume2, Lightbulb } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAudioRecorder } from '@/hooks/useAudioRecorder';
@@ -88,7 +88,7 @@ const Chat: React.FC = () => {
   const [isTyping, setIsTyping] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showTranslation, setShowTranslation] = useState<string | null>(null);
-  const [voiceEnabled, setVoiceEnabled] = useState(false);
+  const [voiceEnabled] = useState(true); // Voice always enabled
   const [conversationId] = useState(() => crypto.randomUUID());
   const [authUserId, setAuthUserId] = useState<string | undefined>(undefined);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -172,10 +172,8 @@ const Chat: React.FC = () => {
       };
       setMessages([initialMessage]);
       
-      // Speak initial message if voice is enabled
-      if (voiceEnabled) {
-        speak(initialMessage.content);
-      }
+      // Always speak initial message
+      speak(initialMessage.content);
     }
   }, [scenario, userLanguage]);
 
@@ -398,10 +396,30 @@ const Chat: React.FC = () => {
         }));
       }
 
-      // Speak assistant response with ElevenLabs
-      if (voiceEnabled && mainResponse) {
+      // Always speak assistant response with ElevenLabs
+      if (mainResponse) {
         speak(mainResponse);
       }
+
+      // Auto-save conversation after each message exchange
+      const updatedMessages = [...messages, userMessage, {
+        id: assistantMessageId,
+        role: 'assistant' as const,
+        content: mainResponse,
+        timestamp: new Date(),
+      }];
+      
+      const conversationToSave: Conversation = {
+        id: conversationId,
+        scenarioId: scenarioId || '',
+        userId: user?.id || '',
+        messages: updatedMessages,
+        startedAt: messages[0]?.timestamp || new Date(),
+      };
+      
+      saveConversation(conversationToSave).catch(err => 
+        console.error('Auto-save failed:', err)
+      );
     } catch (error) {
       console.error('Chat error:', error);
       toast({
@@ -508,27 +526,7 @@ const Chat: React.FC = () => {
     }
   };
 
-  const toggleVoice = () => {
-    if (isSpeaking) {
-      stop();
-    }
-    setVoiceEnabled(!voiceEnabled);
-    
-    const languageNames: Record<string, string> = {
-      english: 'inglês',
-      spanish: 'espanhol',
-      french: 'francês',
-      italian: 'italiano',
-      german: 'alemão',
-    };
-    
-    toast({
-      title: voiceEnabled ? "Voz desativada" : "Voz ativada",
-      description: voiceEnabled 
-        ? "A IA não falará mais as respostas." 
-        : `A IA falará em ${languageNames[userLanguage] || 'inglês'} com voz natural.`,
-    });
-  };
+  // Voice is always on - no toggle needed
 
   const handleSpeakMessage = (content: string) => {
     if (isSpeaking) {
@@ -577,17 +575,6 @@ const Chat: React.FC = () => {
             compact
           />
         )}
-        
-        {/* Voice toggle button */}
-        <button 
-          onClick={toggleVoice}
-          className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
-            voiceEnabled ? 'bg-primary text-primary-foreground' : 'hover:bg-muted text-muted-foreground'
-          }`}
-          title={voiceEnabled ? "Desativar voz" : "Ativar voz"}
-        >
-          {voiceEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
-        </button>
         
         <button className="w-10 h-10 rounded-xl hover:bg-muted flex items-center justify-center shrink-0">
           <MoreVertical className="w-5 h-5 text-muted-foreground" />
