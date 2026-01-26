@@ -51,7 +51,7 @@ const Landing: React.FC = () => {
         <div className="container mx-auto max-w-6xl">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="animate-fade-in">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-muted text-sm text-muted-foreground mb-6">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-muted text-sm text-foreground/80 mb-6">
                 <Zap className="w-4 h-4 text-primary" />
                 Aprendizado acelerado com IA
               </div>
