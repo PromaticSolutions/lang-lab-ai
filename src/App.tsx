@@ -38,25 +38,27 @@ function AppRoutes() {
 
   return (
     <>
-      <Routes>
-        <Route path="/" element={<Index />} />
-        <Route path="/landing" element={<Landing />} />
-        <Route path="/splash" element={<Splash />} />
-        <Route path="/welcome" element={<Welcome />} />
-        <Route path="/auth" element={<Auth />} />
-        <Route path="/onboarding" element={<Onboarding />} />
-        <Route path="/home" element={<Home />} />
-        <Route path="/plans" element={<Plans />} />
-        <Route path="/chat/:scenarioId" element={<Chat />} />
-        <Route path="/feedback" element={<Feedback />} />
-        <Route path="/history" element={<History />} />
-        <Route path="/analytics" element={<Analytics />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="/achievements" element={<Achievements />} />
-        <Route path="/leaderboard" element={<Leaderboard />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
+      <main>
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/landing" element={<Landing />} />
+          <Route path="/splash" element={<Splash />} />
+          <Route path="/welcome" element={<Welcome />} />
+          <Route path="/auth" element={<Auth />} />
+          <Route path="/onboarding" element={<Onboarding />} />
+          <Route path="/home" element={<Home />} />
+          <Route path="/plans" element={<Plans />} />
+          <Route path="/chat/:scenarioId" element={<Chat />} />
+          <Route path="/feedback" element={<Feedback />} />
+          <Route path="/history" element={<History />} />
+          <Route path="/analytics" element={<Analytics />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/achievements" element={<Achievements />} />
+          <Route path="/leaderboard" element={<Leaderboard />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </main>
       {showHelpButton && <HelpButton />}
     </>
   );
