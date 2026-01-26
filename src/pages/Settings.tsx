@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useApp } from '@/contexts/AppContext';
 import {
   Globe,
@@ -13,16 +14,19 @@ import {
   Moon,
   Sun,
   CreditCard,
-  Loader2
+  Loader2,
+  Languages
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { AppLayout } from '@/components/AppLayout';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { changeUILanguage, getCurrentUILanguage } from '@/locales';
 
 const Settings: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { user, logout, authUserId } = useApp();
   const { toast } = useToast();
   
@@ -32,8 +36,8 @@ const Settings: React.FC = () => {
     return document.documentElement.classList.contains('dark');
   });
   const [loadingPortal, setLoadingPortal] = useState(false);
+  const [uiLanguage, setUILanguage] = useState<'pt-BR' | 'en'>(getCurrentUILanguage());
 
-  // Salvar configurações no banco de dados
   const saveSettings = useCallback(async (field: string, value: boolean) => {
     if (!authUserId) return;
     
@@ -49,7 +53,6 @@ const Settings: React.FC = () => {
     }
   }, [authUserId]);
 
-  // Carregar configurações do banco
   useEffect(() => {
     const loadSettings = async () => {
       if (!authUserId) return;
@@ -78,7 +81,6 @@ const Settings: React.FC = () => {
     loadSettings();
   }, [authUserId]);
 
-  // Aplicar tema e salvar no banco
   useEffect(() => {
     if (darkMode) {
       document.documentElement.classList.add('dark');
@@ -88,6 +90,11 @@ const Settings: React.FC = () => {
     saveSettings('theme', darkMode);
   }, [darkMode, saveSettings]);
 
+  const handleUILanguageChange = (lang: 'pt-BR' | 'en') => {
+    setUILanguage(lang);
+    changeUILanguage(lang);
+  };
+
   const planLabels: Record<string, string> = {
     free_trial: 'Free Trial',
     beginner: 'Beginner',
@@ -96,7 +103,7 @@ const Settings: React.FC = () => {
   };
 
   const handleDeleteAccount = () => {
-    if (confirm('Tem certeza que deseja excluir sua conta? Esta ação não pode ser desfeita.')) {
+    if (confirm(t('settings.dangerZone.confirmDelete'))) {
       logout();
       navigate('/');
     }
@@ -115,8 +122,8 @@ const Settings: React.FC = () => {
     } catch (error) {
       console.error('Error opening customer portal:', error);
       toast({
-        title: "Erro",
-        description: "Não foi possível abrir o portal de assinaturas. Verifique se você possui uma assinatura ativa.",
+        title: t('common.error'),
+        description: t('settings.subscription.error'),
         variant: "destructive",
       });
     } finally {
@@ -124,18 +131,27 @@ const Settings: React.FC = () => {
     }
   };
 
+  const studyLanguageLabels: Record<string, string> = {
+    english: t('onboarding.languages.english'),
+    spanish: t('onboarding.languages.spanish'),
+    french: t('onboarding.languages.french'),
+    italian: t('onboarding.languages.italian'),
+    german: t('onboarding.languages.german'),
+    portuguese: t('onboarding.languages.portuguese'),
+  };
+
   return (
     <AppLayout>
       <div className="p-6 lg:p-8 max-w-3xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-2xl lg:text-3xl font-bold text-foreground mb-2">Configurações</h1>
-          <p className="text-muted-foreground">Personalize sua experiência</p>
+          <h1 className="text-2xl lg:text-3xl font-bold text-foreground mb-2">{t('settings.title')}</h1>
+          <p className="text-muted-foreground">{t('settings.subtitle')}</p>
         </div>
 
         <div className="space-y-6">
           {/* Plan Section */}
           <div className="bg-card rounded-xl border border-border p-6">
-            <h3 className="font-semibold text-foreground mb-4">Assinatura</h3>
+            <h3 className="font-semibold text-foreground mb-4">{t('settings.subscription.title')}</h3>
             
             <button
               onClick={() => navigate('/plans')}
@@ -148,7 +164,7 @@ const Settings: React.FC = () => {
                 <p className="font-semibold text-foreground">
                   {user ? planLabels[user.plan] : 'Free Trial'}
                 </p>
-                <p className="text-sm text-muted-foreground">Toque para ver ou alterar seu plano</p>
+                <p className="text-sm text-muted-foreground">{t('settings.subscription.viewOrChange')}</p>
               </div>
               <ChevronRight className="w-5 h-5 text-muted-foreground" />
             </button>
@@ -163,12 +179,12 @@ const Settings: React.FC = () => {
                 {loadingPortal ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Carregando...
+                    {t('settings.subscription.loading')}
                   </>
                 ) : (
                   <>
                     <CreditCard className="w-4 h-4 mr-2" />
-                    Gerenciar assinatura
+                    {t('settings.subscription.manage')}
                   </>
                 )}
               </Button>
@@ -177,34 +193,52 @@ const Settings: React.FC = () => {
 
           {/* Language Section */}
           <div className="bg-card rounded-xl border border-border p-6">
-            <h3 className="font-semibold text-foreground mb-4">Idioma</h3>
+            <h3 className="font-semibold text-foreground mb-4">{t('settings.language.title')}</h3>
             
             <div className="space-y-4">
+              {/* UI Language Selector */}
+              <div className="p-3 bg-muted/50 rounded-lg">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="text-muted-foreground"><Languages className="w-5 h-5" /></div>
+                  <p className="font-medium text-foreground">{t('settings.uiLanguage.title')}</p>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant={uiLanguage === 'pt-BR' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => handleUILanguageChange('pt-BR')}
+                    className="flex-1"
+                  >
+                    🇧🇷 {t('settings.uiLanguage.portuguese')}
+                  </Button>
+                  <Button
+                    variant={uiLanguage === 'en' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => handleUILanguageChange('en')}
+                    className="flex-1"
+                  >
+                    🇬🇧 {t('settings.uiLanguage.english')}
+                  </Button>
+                </div>
+              </div>
+
               <SettingItem
                 icon={<Globe className="w-5 h-5" />}
-                label="Idioma do app"
-                value="Português (BR)"
-              />
-              <SettingItem
-                icon={<Globe className="w-5 h-5" />}
-                label="Idioma de estudo"
-                value={user?.language === 'english' ? 'Inglês' : 
-                       user?.language === 'spanish' ? 'Espanhol' :
-                       user?.language === 'french' ? 'Francês' :
-                       user?.language === 'italian' ? 'Italiano' : 'Alemão'}
+                label={t('settings.language.studyLanguage')}
+                value={user?.language ? studyLanguageLabels[user.language] : '-'}
               />
             </div>
           </div>
 
           {/* Preferences Section */}
           <div className="bg-card rounded-xl border border-border p-6">
-            <h3 className="font-semibold text-foreground mb-4">Preferências</h3>
+            <h3 className="font-semibold text-foreground mb-4">{t('settings.preferences.title')}</h3>
             
             <div className="space-y-4">
               <ToggleSetting
                 icon={<Bell className="w-5 h-5" />}
-                label="Notificações"
-                description="Receba lembretes de prática"
+                label={t('settings.preferences.notifications')}
+                description={t('settings.preferences.notificationsDesc')}
                 checked={notifications}
                 onChange={(checked) => {
                   setNotifications(checked);
@@ -213,8 +247,8 @@ const Settings: React.FC = () => {
               />
               <ToggleSetting
                 icon={<Volume2 className="w-5 h-5" />}
-                label="Sons do app"
-                description="Efeitos sonoros e alertas"
+                label={t('settings.preferences.sounds')}
+                description={t('settings.preferences.soundsDesc')}
                 checked={sounds}
                 onChange={(checked) => {
                   setSounds(checked);
@@ -223,33 +257,33 @@ const Settings: React.FC = () => {
               />
               <ToggleSetting
                 icon={darkMode ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
-                label="Modo escuro"
-                description="Alterne entre tema claro e escuro"
+                label={t('settings.preferences.darkMode')}
+                description={t('settings.preferences.darkModeDesc')}
                 checked={darkMode}
                 onChange={setDarkMode}
               />
               <SettingItem
                 icon={<Mic className="w-5 h-5" />}
-                label="Voz da IA"
-                value="Feminina (US)"
+                label={t('settings.preferences.aiVoice')}
+                value={t('settings.preferences.femaleUS')}
               />
             </div>
           </div>
 
           {/* Privacy Section */}
           <div className="bg-card rounded-xl border border-border p-6">
-            <h3 className="font-semibold text-foreground mb-4">Privacidade</h3>
+            <h3 className="font-semibold text-foreground mb-4">{t('settings.privacy.title')}</h3>
             
             <div className="space-y-4">
               <SettingItem
                 icon={<Shield className="w-5 h-5" />}
-                label="Política de privacidade"
+                label={t('settings.privacy.privacyPolicy')}
                 value=""
                 showArrow
               />
               <SettingItem
                 icon={<Shield className="w-5 h-5" />}
-                label="Termos de uso"
+                label={t('settings.privacy.termsOfUse')}
                 value=""
                 showArrow
               />
@@ -258,7 +292,7 @@ const Settings: React.FC = () => {
 
           {/* Danger Zone */}
           <div className="bg-card rounded-xl border border-destructive/30 p-6">
-            <h3 className="font-semibold text-destructive mb-4">Zona de perigo</h3>
+            <h3 className="font-semibold text-destructive mb-4">{t('settings.dangerZone.title')}</h3>
             
             <Button 
               variant="outline" 
@@ -266,10 +300,10 @@ const Settings: React.FC = () => {
               onClick={handleDeleteAccount}
             >
               <Trash2 className="w-4 h-4 mr-2" />
-              Excluir minha conta
+              {t('settings.dangerZone.deleteAccount')}
             </Button>
             <p className="text-xs text-muted-foreground mt-2 text-center">
-              Esta ação é irreversível. Todos os seus dados serão perdidos.
+              {t('settings.dangerZone.deleteWarning')}
             </p>
           </div>
         </div>

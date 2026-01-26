@@ -1,34 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { useApp } from '@/contexts/AppContext';
 import { Language, Level, WeeklyGoal } from '@/types';
 import { Check, Globe, Target, Calendar, ArrowRight, ArrowLeft, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-
-const languages = [
-  { id: 'english', name: 'Inglês', flag: '🇺🇸' },
-  { id: 'spanish', name: 'Espanhol', flag: '🇪🇸' },
-  { id: 'french', name: 'Francês', flag: '🇫🇷' },
-  { id: 'italian', name: 'Italiano', flag: '🇮🇹' },
-  { id: 'german', name: 'Alemão', flag: '🇩🇪' },
-];
-
-const levels = [
-  { id: 'basic', name: 'Básico', description: 'Estou começando do zero', adaptiveLevel: 'A1' },
-  { id: 'intermediate', name: 'Intermediário', description: 'Conheço o básico', adaptiveLevel: 'B1' },
-  { id: 'advanced', name: 'Avançado', description: 'Quero aperfeiçoar', adaptiveLevel: 'C1' },
-];
-
-const goals = [
-  { id: 2, name: '2 conversas/semana', description: 'Ritmo tranquilo' },
-  { id: 5, name: '5 conversas/semana', description: 'Equilíbrio ideal' },
-  { id: 10, name: '10 conversas/semana', description: 'Aprendizado intenso' },
-];
+import { getLanguageFamily } from '@/locales';
 
 const Onboarding: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { updateUserProfile, setHasCompletedOnboarding, authUserId } = useApp();
   const { toast } = useToast();
   const [step, setStep] = useState(1);
@@ -37,7 +20,32 @@ const Onboarding: React.FC = () => {
   const [selectedGoal, setSelectedGoal] = useState<WeeklyGoal>(5);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Verificar se usuário está autenticado
+  // Get UI language family to determine which languages to show
+  const uiLanguage = getLanguageFamily();
+
+  // Languages available - for Europeans, add Portuguese as an option
+  const languages = [
+    { id: 'english', name: t('onboarding.languages.english'), flag: '🇺🇸' },
+    { id: 'spanish', name: t('onboarding.languages.spanish'), flag: '🇪🇸' },
+    { id: 'french', name: t('onboarding.languages.french'), flag: '🇫🇷' },
+    { id: 'italian', name: t('onboarding.languages.italian'), flag: '🇮🇹' },
+    { id: 'german', name: t('onboarding.languages.german'), flag: '🇩🇪' },
+    // Show Portuguese for European users (non-Portuguese speakers)
+    ...(uiLanguage === 'en' ? [{ id: 'portuguese', name: t('onboarding.languages.portuguese'), flag: '🇧🇷' }] : []),
+  ];
+
+  const levels = [
+    { id: 'basic', name: t('onboarding.levels.basic'), description: t('onboarding.levels.basicDesc'), adaptiveLevel: 'A1' },
+    { id: 'intermediate', name: t('onboarding.levels.intermediate'), description: t('onboarding.levels.intermediateDesc'), adaptiveLevel: 'B1' },
+    { id: 'advanced', name: t('onboarding.levels.advanced'), description: t('onboarding.levels.advancedDesc'), adaptiveLevel: 'C1' },
+  ];
+
+  const goals = [
+    { id: 2, name: t('onboarding.goals.2'), description: t('onboarding.goals.2Desc') },
+    { id: 5, name: t('onboarding.goals.5'), description: t('onboarding.goals.5Desc') },
+    { id: 10, name: t('onboarding.goals.10'), description: t('onboarding.goals.10Desc') },
+  ];
+
   useEffect(() => {
     if (!authUserId) {
       navigate('/auth');
@@ -51,11 +59,9 @@ const Onboarding: React.FC = () => {
       setIsSaving(true);
       
       try {
-        // Determinar nível adaptativo inicial
         const selectedLevelData = levels.find(l => l.id === selectedLevel);
         const adaptiveLevel = selectedLevelData?.adaptiveLevel || 'B1';
 
-        // Usar upsert para garantir que funcione mesmo se o perfil não existir
         const { error } = await supabase
           .from('user_profiles')
           .upsert({
@@ -71,7 +77,6 @@ const Onboarding: React.FC = () => {
 
         if (error) throw error;
 
-        // Atualizar contexto local
         updateUserProfile({
           language: selectedLanguage,
           level: selectedLevel,
@@ -80,16 +85,16 @@ const Onboarding: React.FC = () => {
         setHasCompletedOnboarding(true);
         
         toast({
-          title: "Perfil configurado!",
-          description: "Vamos começar a praticar.",
+          title: t('onboarding.success.title'),
+          description: t('onboarding.success.description'),
         });
         
         navigate('/home');
       } catch (error) {
         console.error('Error saving onboarding:', error);
         toast({
-          title: "Erro",
-          description: "Não foi possível salvar suas preferências. Tente novamente.",
+          title: t('onboarding.error.title'),
+          description: t('onboarding.error.description'),
           variant: "destructive",
         });
       } finally {
@@ -136,10 +141,10 @@ const Onboarding: React.FC = () => {
               <Globe className="w-8 h-8 text-white" />
             </div>
             <h1 className="text-2xl font-bold text-foreground mb-2">
-              Qual idioma você quer aprender?
+              {t('onboarding.step1.title')}
             </h1>
             <p className="text-muted-foreground mb-8">
-              Escolha o idioma que você deseja praticar
+              {t('onboarding.step1.subtitle')}
             </p>
 
             <div className="space-y-3">
@@ -170,10 +175,10 @@ const Onboarding: React.FC = () => {
               <Target className="w-8 h-8 text-white" />
             </div>
             <h1 className="text-2xl font-bold text-foreground mb-2">
-              Qual é o seu nível?
+              {t('onboarding.step2.title')}
             </h1>
             <p className="text-muted-foreground mb-8">
-              Vamos adaptar as conversas para você
+              {t('onboarding.step2.subtitle')}
             </p>
 
             <div className="space-y-3">
@@ -206,10 +211,10 @@ const Onboarding: React.FC = () => {
               <Calendar className="w-8 h-8 text-white" />
             </div>
             <h1 className="text-2xl font-bold text-foreground mb-2">
-              Qual é seu objetivo semanal?
+              {t('onboarding.step3.title')}
             </h1>
             <p className="text-muted-foreground mb-8">
-              Defina quantas conversas você quer fazer
+              {t('onboarding.step3.subtitle')}
             </p>
 
             <div className="space-y-3">
@@ -243,16 +248,16 @@ const Onboarding: React.FC = () => {
           {isSaving ? (
             <>
               <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-              Salvando...
+              {t('onboarding.saving')}
             </>
           ) : step === 3 ? (
             <>
-              Começar a praticar
+              {t('onboarding.startPracticing')}
               <ArrowRight className="w-5 h-5 ml-2" />
             </>
           ) : (
             <>
-              Continuar
+              {t('common.continue')}
               <ArrowRight className="w-5 h-5 ml-2" />
             </>
           )}

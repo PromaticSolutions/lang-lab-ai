@@ -1,10 +1,12 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { MessageCircle, Sparkles, Globe, Brain, Mic } from 'lucide-react';
 
 const Welcome: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   return (
     <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
@@ -32,15 +34,15 @@ const Welcome: React.FC = () => {
           className="text-3xl md:text-4xl font-bold text-foreground text-center mb-4 animate-slide-up"
           style={{ animationDelay: '0.2s' }}
         >
-          Aprenda idiomas<br />
-          <span className="text-gradient">conversando com IA</span>
+          {t('welcome.title')}<br />
+          <span className="text-gradient">{t('welcome.titleHighlight')}</span>
         </h1>
 
         <p 
           className="text-muted-foreground text-center text-lg mb-12 max-w-sm animate-slide-up"
           style={{ animationDelay: '0.3s' }}
         >
-          Pratique em cenários reais e receba feedback instantâneo
+          {t('welcome.subtitle')}
         </p>
 
         {/* Features */}
@@ -48,9 +50,9 @@ const Welcome: React.FC = () => {
           className="grid grid-cols-3 gap-4 mb-12 w-full max-w-sm animate-slide-up"
           style={{ animationDelay: '0.4s' }}
         >
-          <FeatureItem icon={<Globe className="w-5 h-5" />} label="5 idiomas" />
-          <FeatureItem icon={<Brain className="w-5 h-5" />} label="IA adaptativa" />
-          <FeatureItem icon={<Mic className="w-5 h-5" />} label="Áudio" />
+          <FeatureItem icon={<Globe className="w-5 h-5" />} label={t('welcome.features.languages')} />
+          <FeatureItem icon={<Brain className="w-5 h-5" />} label={t('welcome.features.adaptiveAI')} />
+          <FeatureItem icon={<Mic className="w-5 h-5" />} label={t('welcome.features.audio')} />
         </div>
 
         {/* Illustration placeholder */}
@@ -84,7 +86,7 @@ const Welcome: React.FC = () => {
           className="w-full"
           onClick={() => navigate('/auth')}
         >
-          Continuar
+          {t('welcome.continue')}
         </Button>
       </div>
     </div>

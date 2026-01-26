@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useApp } from '@/contexts/AppContext';
 import { scenarios, isScenarioLocked } from '@/data/scenarios';
 import { Lock, TrendingUp, Target, BookOpen, Trophy, Users, ChevronRight } from 'lucide-react';
@@ -7,14 +8,13 @@ import { Scenario } from '@/types';
 import { AppLayout } from '@/components/AppLayout';
 import { useCredits } from '@/hooks/useCredits';
 import { CreditsDisplay } from '@/components/CreditsDisplay';
-import { Button } from '@/components/ui/button';
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { user, isAuthenticated, hasCompletedOnboarding, isLoading, authUserId } = useApp();
   const { credits, hasUnlimitedCredits } = useCredits(authUserId || undefined, user?.plan);
 
-  // Redirecionar se não estiver autenticado ou não completou onboarding
   useEffect(() => {
     if (!isLoading) {
       if (!isAuthenticated) {
@@ -26,17 +26,18 @@ const Home: React.FC = () => {
   }, [isAuthenticated, hasCompletedOnboarding, isLoading, navigate]);
 
   const languageLabels: Record<string, string> = {
-    english: 'Inglês',
-    spanish: 'Espanhol',
-    french: 'Francês',
-    italian: 'Italiano',
-    german: 'Alemão',
+    english: t('onboarding.languages.english'),
+    spanish: t('onboarding.languages.spanish'),
+    french: t('onboarding.languages.french'),
+    italian: t('onboarding.languages.italian'),
+    german: t('onboarding.languages.german'),
+    portuguese: t('onboarding.languages.portuguese'),
   };
 
   const levelLabels: Record<string, string> = {
-    basic: 'Básico (A1-A2)',
-    intermediate: 'Intermediário (B1-B2)',
-    advanced: 'Avançado (C1-C2)',
+    basic: t('home.levelLabels.basic'),
+    intermediate: t('home.levelLabels.intermediate'),
+    advanced: t('home.levelLabels.advanced'),
   };
 
   const handleScenarioClick = (scenario: Scenario) => {
@@ -54,10 +55,10 @@ const Home: React.FC = () => {
         <div className="mb-8 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl lg:text-3xl font-bold text-foreground mb-2">
-              Bem-vindo de volta, {user?.name?.split(' ')[0] || 'Estudante'}
+              {t('home.welcome')} {user?.name?.split(' ')[0] || t('home.student')}
             </h1>
             <p className="text-muted-foreground">
-              Continue praticando para alcançar suas metas semanais
+              {t('home.subtitle')}
             </p>
           </div>
           
@@ -82,26 +83,26 @@ const Home: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <StatCard
             icon={<BookOpen className="w-5 h-5" />}
-            label="Idioma"
-            value={user?.language ? languageLabels[user.language] || user.language : 'Não definido'}
+            label={t('home.stats.language')}
+            value={user?.language ? languageLabels[user.language] || user.language : '-'}
             color="bg-primary/10 text-primary"
           />
           <StatCard
             icon={<Target className="w-5 h-5" />}
-            label="Nível"
-            value={user?.level ? levelLabels[user.level] || user.level : 'Não definido'}
+            label={t('home.stats.level')}
+            value={user?.level ? levelLabels[user.level] || user.level : '-'}
             color="bg-secondary/10 text-secondary"
           />
           <StatCard
             icon={<TrendingUp className="w-5 h-5" />}
-            label="Esta semana"
-            value="3 conversas"
+            label={t('home.stats.thisWeek')}
+            value={`3 ${t('home.stats.conversations')}`}
             color="bg-success/10 text-success"
           />
           <StatCard
             icon={<Target className="w-5 h-5" />}
-            label="Meta semanal"
-            value={`${user?.weeklyGoal || 5} conversas`}
+            label={t('home.stats.weeklyGoal')}
+            value={`${user?.weeklyGoal || 5} ${t('home.stats.conversations')}`}
             color="bg-warning/10 text-warning"
           />
         </div>
@@ -116,8 +117,8 @@ const Home: React.FC = () => {
               <Trophy className="w-6 h-6 text-white" />
             </div>
             <div className="flex-1 text-left">
-              <p className="font-semibold text-foreground">Conquistas</p>
-              <p className="text-sm text-muted-foreground">Veja suas medalhas e desbloqueie novas</p>
+              <p className="font-semibold text-foreground">{t('home.quickActions.achievements')}</p>
+              <p className="text-sm text-muted-foreground">{t('home.quickActions.achievementsDesc')}</p>
             </div>
             <ChevronRight className="w-5 h-5 text-muted-foreground" />
           </button>
@@ -130,8 +131,8 @@ const Home: React.FC = () => {
               <Users className="w-6 h-6 text-white" />
             </div>
             <div className="flex-1 text-left">
-              <p className="font-semibold text-foreground">Ranking</p>
-              <p className="text-sm text-muted-foreground">Compete com amigos e grupos</p>
+              <p className="font-semibold text-foreground">{t('home.quickActions.ranking')}</p>
+              <p className="text-sm text-muted-foreground">{t('home.quickActions.rankingDesc')}</p>
             </div>
             <ChevronRight className="w-5 h-5 text-muted-foreground" />
           </button>
@@ -140,9 +141,9 @@ const Home: React.FC = () => {
         {/* Scenarios Section */}
         <div>
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-foreground">Cenários Disponíveis</h2>
+            <h2 className="text-xl font-semibold text-foreground">{t('home.scenarios.title')}</h2>
             <p className="text-sm text-muted-foreground">
-              {scenarios.filter(s => !user || !isScenarioLocked(s, user.plan)).length} de {scenarios.length} desbloqueados
+              {scenarios.filter(s => !user || !isScenarioLocked(s, user.plan)).length} {t('home.scenarios.of')} {scenarios.length} {t('home.scenarios.unlocked')}
             </p>
           </div>
           
@@ -174,7 +175,7 @@ const Home: React.FC = () => {
                   
                   {!locked && (
                     <div className="mt-4 pt-4 border-t border-border">
-                      <span className="text-xs text-primary font-medium">Iniciar conversa →</span>
+                      <span className="text-xs text-primary font-medium">{t('home.scenarios.startConversation')}</span>
                     </div>
                   )}
                 </button>

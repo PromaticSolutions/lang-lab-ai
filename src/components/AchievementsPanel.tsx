@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAchievements } from '@/hooks/useAchievements';
 import { AchievementCard } from './AchievementCard';
 import { categoryNames, Achievement } from '@/data/achievements';
@@ -11,6 +12,7 @@ interface AchievementsPanelProps {
 }
 
 export const AchievementsPanel: React.FC<AchievementsPanelProps> = ({ userId }) => {
+  const { t } = useTranslation();
   const { achievements, unlockedCount, totalCount, progressPercent, isLoading } = useAchievements(userId);
   const [activeCategory, setActiveCategory] = useState<Achievement['category'] | 'all'>('all');
 
@@ -21,6 +23,15 @@ export const AchievementsPanel: React.FC<AchievementsPanelProps> = ({ userId }) 
       </div>
     );
   }
+
+  // Translated category names
+  const translatedCategoryNames: Record<string, string> = {
+    conversations: t('achievements.categories.conversations'),
+    streaks: t('achievements.categories.streaks'),
+    scores: t('achievements.categories.scores'),
+    exploration: t('achievements.categories.exploration'),
+    milestones: t('achievements.categories.milestones'),
+  };
 
   const categories: (Achievement['category'] | 'all')[] = ['all', 'conversations', 'streaks', 'scores', 'exploration', 'milestones'];
   
@@ -44,9 +55,9 @@ export const AchievementsPanel: React.FC<AchievementsPanelProps> = ({ userId }) 
             <Trophy className="w-8 h-8 text-primary" />
           </div>
           <div className="flex-1">
-            <h2 className="text-xl font-bold text-foreground">Suas Conquistas</h2>
+            <h2 className="text-xl font-bold text-foreground">{t('achievements.title')}</h2>
             <p className="text-muted-foreground">
-              {unlockedCount} de {totalCount} desbloqueadas
+              {unlockedCount} {t('achievements.of')} {totalCount} {t('achievements.unlocked')}
             </p>
           </div>
           <div className="text-right">
@@ -60,9 +71,9 @@ export const AchievementsPanel: React.FC<AchievementsPanelProps> = ({ userId }) 
       <Tabs value={activeCategory} onValueChange={(v) => setActiveCategory(v as typeof activeCategory)}>
         <TabsList className="w-full flex-wrap h-auto gap-1 bg-muted/50 p-1">
           <TabsTrigger value="all" className="flex-1 min-w-fit">
-            Todas
+            {t('achievements.all')}
           </TabsTrigger>
-          {Object.entries(categoryNames).map(([key, name]) => (
+          {Object.entries(translatedCategoryNames).map(([key, name]) => (
             <TabsTrigger key={key} value={key} className="flex-1 min-w-fit">
               {name}
             </TabsTrigger>
@@ -84,7 +95,7 @@ export const AchievementsPanel: React.FC<AchievementsPanelProps> = ({ userId }) 
       {/* Recent unlocks */}
       {achievements.filter(a => a.unlocked).length > 0 && (
         <div className="space-y-3">
-          <h3 className="font-semibold text-foreground">Conquistas Recentes</h3>
+          <h3 className="font-semibold text-foreground">{t('achievements.recent')}</h3>
           <div className="flex gap-2 flex-wrap">
             {achievements
               .filter(a => a.unlocked)

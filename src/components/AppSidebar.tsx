@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useApp } from '@/contexts/AppContext';
 import {
   Sidebar,
@@ -27,22 +28,23 @@ import {
   Users,
 } from 'lucide-react';
 
-const menuItems = [
-  { title: 'Dashboard', icon: LayoutDashboard, path: '/home' },
-  { title: 'Conquistas', icon: Trophy, path: '/achievements' },
-  { title: 'Ranking', icon: Users, path: '/leaderboard' },
-  { title: 'Histórico', icon: History, path: '/history' },
-  { title: 'Análises', icon: BarChart3, path: '/analytics' },
-  { title: 'Perfil', icon: User, path: '/profile' },
-  { title: 'Configurações', icon: Settings, path: '/settings' },
-];
-
 export function AppSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useTranslation();
   const { user, logout } = useApp();
   const { state } = useSidebar();
   const isCollapsed = state === 'collapsed';
+
+  const menuItems = [
+    { title: t('nav.dashboard'), icon: LayoutDashboard, path: '/home' },
+    { title: t('nav.achievements'), icon: Trophy, path: '/achievements' },
+    { title: t('nav.ranking'), icon: Users, path: '/leaderboard' },
+    { title: t('nav.history'), icon: History, path: '/history' },
+    { title: t('nav.analytics'), icon: BarChart3, path: '/analytics' },
+    { title: t('nav.profile'), icon: User, path: '/profile' },
+    { title: t('nav.settings'), icon: Settings, path: '/settings' },
+  ];
 
   const handleLogout = () => {
     logout();
@@ -69,7 +71,7 @@ export function AppSidebar() {
           {!isCollapsed && (
             <div className="overflow-hidden">
               <h1 className="font-bold text-lg text-foreground truncate">Fluency IA</h1>
-              <p className="text-xs text-muted-foreground">Aprenda conversando</p>
+              <p className="text-xs text-muted-foreground">{t('welcome.subtitle').substring(0, 20)}...</p>
             </div>
           )}
         </div>
@@ -104,7 +106,7 @@ export function AppSidebar() {
               <p className="font-medium text-sm text-foreground truncate">
                 {user ? planLabels[user.plan] : 'Free Trial'}
               </p>
-              <p className="text-xs text-muted-foreground">Ver planos</p>
+              <p className="text-xs text-muted-foreground">{t('nav.viewPlans')}</p>
             </div>
             <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
           </button>
@@ -116,7 +118,7 @@ export function AppSidebar() {
               {menuItems.map((item) => {
                 const isActive = location.pathname === item.path;
                 return (
-                  <SidebarMenuItem key={item.title}>
+                  <SidebarMenuItem key={item.path}>
                     <SidebarMenuButton
                       onClick={() => navigate(item.path)}
                       isActive={isActive}
@@ -145,11 +147,11 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton
               onClick={handleLogout}
-              tooltip="Sair"
+              tooltip={t('nav.logout')}
               className="h-11 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
             >
               <LogOut className="w-5 h-5" />
-              <span>Sair</span>
+              <span>{t('nav.logout')}</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

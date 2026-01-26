@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { 
   MessageSquare, 
@@ -16,6 +17,7 @@ import {
 
 const Landing: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   return (
     <div className="min-h-screen bg-background">
@@ -30,17 +32,17 @@ const Landing: React.FC = () => {
           </div>
           
           <div className="hidden md:flex items-center gap-8">
-            <a href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Recursos</a>
-            <a href="#how-it-works" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Como Funciona</a>
-            <a href="#pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Planos</a>
+            <a href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">{t('landing.nav.features')}</a>
+            <a href="#how-it-works" className="text-sm text-muted-foreground hover:text-foreground transition-colors">{t('landing.nav.howItWorks')}</a>
+            <a href="#pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors">{t('landing.nav.pricing')}</a>
           </div>
 
           <div className="flex items-center gap-3">
             <Button variant="ghost" onClick={() => navigate('/auth')}>
-              Entrar
+              {t('landing.nav.login')}
             </Button>
             <Button onClick={() => navigate('/auth')} className="gradient-primary border-0">
-              Começar Agora
+              {t('landing.nav.getStarted')}
             </Button>
           </div>
         </div>
@@ -53,38 +55,37 @@ const Landing: React.FC = () => {
             <div className="animate-fade-in">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-muted text-sm text-foreground/80 mb-6">
                 <Zap className="w-4 h-4 text-primary" />
-                Aprendizado acelerado com IA
+                {t('landing.hero.badge')}
               </div>
               
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight mb-6">
-                Domine idiomas através de{' '}
-                <span className="text-gradient">conversas reais</span>
+                {t('landing.hero.title')}{' '}
+                <span className="text-gradient">{t('landing.hero.titleHighlight')}</span>
               </h1>
               
               <p className="text-lg text-muted-foreground mb-8 leading-relaxed">
-                Pratique inglês, espanhol, francês e outros idiomas em cenários do mundo real 
-                com nossa IA avançada. Receba feedback instantâneo e análises detalhadas do seu progresso.
+                {t('landing.hero.description')}
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 mb-8">
                 <Button size="xl" onClick={() => navigate('/auth')} className="gradient-primary border-0">
-                  Começar Gratuitamente
+                  {t('landing.hero.cta')}
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </Button>
                 <Button size="xl" variant="outline" className="group">
                   <Play className="w-5 h-5 mr-2 group-hover:text-primary transition-colors" />
-                  Ver Demonstração
+                  {t('landing.hero.demo')}
                 </Button>
               </div>
 
               <div className="flex items-center gap-6 text-sm text-muted-foreground">
                 <div className="flex items-center gap-2">
                   <CheckCircle className="w-4 h-4 text-success" />
-                  7 dias grátis
+                  {t('landing.hero.freeTrial')}
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle className="w-4 h-4 text-success" />
-                  Sem cartão de crédito
+                  {t('landing.hero.noCard')}
                 </div>
               </div>
             </div>
@@ -96,8 +97,8 @@ const Landing: React.FC = () => {
                     <span className="text-lg">🍽️</span>
                   </div>
                   <div>
-                    <p className="font-semibold text-foreground">Cenário: Restaurante</p>
-                    <p className="text-xs text-muted-foreground">Nível Intermediário</p>
+                    <p className="font-semibold text-foreground">{t('landing.chat.scenario')}: {t('landing.method.scenarios.restaurant')}</p>
+                    <p className="text-xs text-muted-foreground">{t('landing.chat.level')}</p>
                   </div>
                 </div>
                 
@@ -128,7 +129,7 @@ const Landing: React.FC = () => {
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-success flex items-center gap-1">
                       <CheckCircle className="w-3 h-3" />
-                      Gramática correta
+                      {t('landing.chat.correctGrammar')}
                     </span>
                     <span className="text-muted-foreground">Score: 95/100</span>
                   </div>
@@ -137,13 +138,13 @@ const Landing: React.FC = () => {
               
               {/* Floating badges */}
               <div className="absolute -top-4 -right-4 bg-card border border-border rounded-xl px-4 py-2 shadow-fluency-md">
-                <p className="text-xs text-muted-foreground">Feedback em</p>
-                <p className="font-bold text-foreground">Tempo Real</p>
+                <p className="text-xs text-muted-foreground">{t('landing.features.instantFeedback.title')}</p>
+                <p className="font-bold text-foreground">{t('landing.chat.realTimeFeedback')}</p>
               </div>
               
               <div className="absolute -bottom-4 -left-4 bg-card border border-border rounded-xl px-4 py-2 shadow-fluency-md">
-                <p className="text-xs text-muted-foreground">Cenários</p>
-                <p className="font-bold text-foreground">8+ Situações</p>
+                <p className="text-xs text-muted-foreground">{t('landing.chat.scenario')}</p>
+                <p className="font-bold text-foreground">{t('landing.chat.scenarios')}</p>
               </div>
             </div>
           </div>
@@ -154,10 +155,10 @@ const Landing: React.FC = () => {
       <section className="py-16 px-6 bg-muted/30">
         <div className="container mx-auto max-w-6xl">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            <StatItem value="10k+" label="Usuários Ativos" />
-            <StatItem value="500k+" label="Conversas Realizadas" />
-            <StatItem value="5" label="Idiomas Disponíveis" />
-            <StatItem value="98%" label="Satisfação" />
+            <StatItem value="10k+" label={t('landing.stats.activeUsers')} />
+            <StatItem value="500k+" label={t('landing.stats.conversations')} />
+            <StatItem value="5" label={t('landing.stats.languages')} />
+            <StatItem value="98%" label={t('landing.stats.satisfaction')} />
           </div>
         </div>
       </section>
@@ -167,60 +168,63 @@ const Landing: React.FC = () => {
         <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Como funciona nosso método de ensino
+              {t('landing.method.title')}
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Aprendizado baseado em tarefas reais (Task-Based Language Teaching)
+              {t('landing.method.subtitle')}
             </p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             <MethodCard 
               emoji="🍽️"
-              scenario="Restaurante"
-              subtitle="Método TBLT"
-              badge="Aprendizado por Tarefas"
+              scenario={t('landing.method.scenarios.restaurant')}
+              subtitle={t('landing.method.methodology')}
+              badge={t('landing.method.badge')}
               messages={[
                 { role: 'ai', text: "Welcome! What would you like to order today?" },
                 { role: 'user', text: "I'd like a main course and a drink, please." },
                 { role: 'ai', text: "Great choice. Would you like to see today's specials?" }
               ]}
-              objective="Completar um pedido"
+              objective={t('landing.method.objectives.order')}
               method="Task-Based Learning"
-              feedback="Comunicação e clareza"
+              feedback={t('landing.method.feedbackTypes.communication')}
+              t={t}
             />
             <MethodCard 
               emoji="✈️"
-              scenario="Viagem"
-              subtitle="Método TBLT"
-              badge="Aprendizado por Tarefas"
+              scenario={t('landing.method.scenarios.travel')}
+              subtitle={t('landing.method.methodology')}
+              badge={t('landing.method.badge')}
               messages={[
                 { role: 'ai', text: "Good morning! May I see your boarding pass, please?" },
                 { role: 'user', text: "Sure, here it is. Can I have a window seat?" },
                 { role: 'ai', text: "Let me check availability. Yes, seat 12A is free." }
               ]}
-              objective="Fazer check-in no aeroporto"
+              objective={t('landing.method.objectives.checkin')}
               method="Task-Based Learning"
-              feedback="Vocabulário e contexto"
+              feedback={t('landing.method.feedbackTypes.vocabulary')}
+              t={t}
             />
             <MethodCard 
               emoji="💼"
-              scenario="Reunião de Trabalho"
-              subtitle="Método TBLT"
-              badge="Aprendizado por Tarefas"
+              scenario={t('landing.method.scenarios.businessMeeting')}
+              subtitle={t('landing.method.methodology')}
+              badge={t('landing.method.badge')}
               messages={[
                 { role: 'ai', text: "Let's discuss the quarterly results. Any thoughts?" },
                 { role: 'user', text: "I believe we should focus on the marketing budget." },
                 { role: 'ai', text: "Good point. Can you elaborate on your proposal?" }
               ]}
-              objective="Participar de uma reunião"
+              objective={t('landing.method.objectives.meeting')}
               method="Task-Based Learning"
-              feedback="Fluência e formalidade"
+              feedback={t('landing.method.feedbackTypes.fluency')}
+              t={t}
             />
           </div>
 
           <p className="text-center text-sm text-muted-foreground mt-8">
-            Método amplamente adotado em universidades de referência e programas de ensino de idiomas.
+            {t('landing.method.footer')}
           </p>
         </div>
       </section>
@@ -230,43 +234,43 @@ const Landing: React.FC = () => {
         <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Recursos que impulsionam seu aprendizado
+              {t('landing.features.title')}
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Tecnologia de ponta combinada com metodologia comprovada para resultados reais
+              {t('landing.features.subtitle')}
             </p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             <FeatureCard 
               icon={<MessageSquare className="w-6 h-6" />}
-              title="Conversas Contextuais"
-              description="Pratique em cenários reais como restaurantes, aeroportos, reuniões de negócios e muito mais."
+              title={t('landing.features.contextualConversations.title')}
+              description={t('landing.features.contextualConversations.description')}
             />
             <FeatureCard 
               icon={<BarChart3 className="w-6 h-6" />}
-              title="Análises Detalhadas"
-              description="Acompanhe seu progresso com métricas de gramática, vocabulário, fluência e pronúncia."
+              title={t('landing.features.detailedAnalytics.title')}
+              description={t('landing.features.detailedAnalytics.description')}
             />
             <FeatureCard 
               icon={<Mic className="w-6 h-6" />}
-              title="Suporte a Áudio"
-              description="Pratique sua pronúncia com reconhecimento de voz e feedback detalhado."
+              title={t('landing.features.audioSupport.title')}
+              description={t('landing.features.audioSupport.description')}
             />
             <FeatureCard 
               icon={<Globe className="w-6 h-6" />}
-              title="5 Idiomas"
-              description="Inglês, Espanhol, Francês, Italiano e Alemão disponíveis para prática."
+              title={t('landing.features.fiveLanguages.title')}
+              description={t('landing.features.fiveLanguages.description')}
             />
             <FeatureCard 
               icon={<Zap className="w-6 h-6" />}
-              title="Feedback Instantâneo"
-              description="Receba correções e sugestões em tempo real durante suas conversas."
+              title={t('landing.features.instantFeedback.title')}
+              description={t('landing.features.instantFeedback.description')}
             />
             <FeatureCard 
               icon={<Award className="w-6 h-6" />}
-              title="Níveis Adaptativos"
-              description="A IA ajusta a dificuldade automaticamente conforme seu progresso."
+              title={t('landing.features.adaptiveLevels.title')}
+              description={t('landing.features.adaptiveLevels.description')}
             />
           </div>
         </div>
@@ -277,28 +281,28 @@ const Landing: React.FC = () => {
         <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Como funciona
+              {t('landing.howItWorks.title')}
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Comece a praticar em apenas 3 passos simples
+              {t('landing.howItWorks.subtitle')}
             </p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
             <StepCard 
               number="01"
-              title="Escolha um cenário"
-              description="Selecione entre 8 cenários do mundo real, desde restaurantes até reuniões de negócios."
+              title={t('landing.howItWorks.step1.title')}
+              description={t('landing.howItWorks.step1.description')}
             />
             <StepCard 
               number="02"
-              title="Converse com a IA"
-              description="Pratique conversas naturais com nossa IA avançada que simula situações reais."
+              title={t('landing.howItWorks.step2.title')}
+              description={t('landing.howItWorks.step2.description')}
             />
             <StepCard 
               number="03"
-              title="Receba feedback"
-              description="Analise seu desempenho com métricas detalhadas e sugestões de melhoria."
+              title={t('landing.howItWorks.step3.title')}
+              description={t('landing.howItWorks.step3.description')}
             />
           </div>
         </div>
@@ -309,48 +313,48 @@ const Landing: React.FC = () => {
         <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Planos para cada necessidade
+              {t('landing.pricing.title')}
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Comece gratuitamente e evolua conforme suas necessidades
+              {t('landing.pricing.subtitle')}
             </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-4 xl:gap-6">
             <PricingCard 
-              name="Free Trial"
-              price="Grátis"
-              period="por 7 dias"
-              features={['2 cenários disponíveis', '10 mensagens por dia', 'Feedback básico']}
-              ctaText="Começar Grátis"
+              name={t('landing.pricing.freeTrial.name')}
+              price={t('landing.pricing.freeTrial.price')}
+              period={t('landing.pricing.freeTrial.period')}
+              features={t('landing.pricing.freeTrial.features', { returnObjects: true }) as string[]}
+              ctaText={t('landing.pricing.freeTrial.cta')}
               onClick={() => navigate('/auth')}
             />
             <PricingCard 
-              name="Beginner"
-              price="R$ 14,99"
-              period="/mês"
-              features={['5 cenários disponíveis', 'Conversas ilimitadas', 'Feedback completo', 'Histórico ilimitado']}
-              ctaText="Assinar Agora"
+              name={t('landing.pricing.beginner.name')}
+              price={t('landing.pricing.beginner.price')}
+              period={t('landing.pricing.beginner.period')}
+              features={t('landing.pricing.beginner.features', { returnObjects: true }) as string[]}
+              ctaText={t('landing.pricing.beginner.cta')}
               onClick={() => navigate('/auth')}
             />
             <PricingCard 
-              name="Pro"
-              price="R$ 27,99"
-              period="/mês"
-              features={['7 cenários disponíveis', 'Suporte a áudio', 'Avaliação de pronúncia', 'Análises avançadas']}
-              ctaText="Assinar Pro"
+              name={t('landing.pricing.pro.name')}
+              price={t('landing.pricing.pro.price')}
+              period={t('landing.pricing.pro.period')}
+              features={t('landing.pricing.pro.features', { returnObjects: true }) as string[]}
+              ctaText={t('landing.pricing.pro.cta')}
               onClick={() => navigate('/auth')}
               highlighted
-              badge="Mais Popular"
+              badge={t('landing.pricing.pro.badge')}
             />
             <PricingCard 
-              name="Fluency Plus"
-              price="R$ 150"
-              period="/ano"
-              features={['Todos os 8 cenários', 'Tudo do Pro incluso', 'Exportar em PDF', 'Suporte prioritário']}
-              ctaText="Assinar Anual"
+              name={t('landing.pricing.fluencyPlus.name')}
+              price={t('landing.pricing.fluencyPlus.price')}
+              period={t('landing.pricing.fluencyPlus.period')}
+              features={t('landing.pricing.fluencyPlus.features', { returnObjects: true }) as string[]}
+              ctaText={t('landing.pricing.fluencyPlus.cta')}
               onClick={() => navigate('/auth')}
-              badge="Melhor Valor"
+              badge={t('landing.pricing.fluencyPlus.badge')}
             />
           </div>
         </div>
@@ -361,17 +365,17 @@ const Landing: React.FC = () => {
         <div className="container mx-auto max-w-4xl">
           <div className="gradient-primary rounded-3xl p-12 text-center">
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-              Pronto para dominar um novo idioma?
+              {t('landing.cta.title')}
             </h2>
             <p className="text-lg text-white/80 mb-8 max-w-2xl mx-auto">
-              Junte-se a milhares de pessoas que já estão aprendendo idiomas de forma mais eficiente com Fluency IA.
+              {t('landing.cta.description')}
             </p>
             <Button 
               size="xl" 
               variant="white"
               onClick={() => navigate('/auth')}
             >
-              Começar Agora — É Grátis
+              {t('landing.cta.button')}
               <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
           </div>
@@ -390,13 +394,13 @@ const Landing: React.FC = () => {
             </div>
             
             <div className="flex items-center gap-6 text-sm text-muted-foreground">
-              <a href="#" className="hover:text-foreground transition-colors">Termos de Uso</a>
-              <a href="#" className="hover:text-foreground transition-colors">Privacidade</a>
-              <a href="#" className="hover:text-foreground transition-colors">Contato</a>
+              <a href="#" className="hover:text-foreground transition-colors">{t('landing.footer.terms')}</a>
+              <a href="#" className="hover:text-foreground transition-colors">{t('landing.footer.privacy')}</a>
+              <a href="#" className="hover:text-foreground transition-colors">{t('landing.footer.contact')}</a>
             </div>
             
             <p className="text-sm text-muted-foreground">
-              © 2024 Fluency IA. Todos os direitos reservados.
+              {t('landing.footer.copyright')}
             </p>
           </div>
         </div>
@@ -500,7 +504,8 @@ const MethodCard: React.FC<{
   objective: string;
   method: string;
   feedback: string;
-}> = ({ emoji, scenario, subtitle, badge, messages, objective, method, feedback }) => (
+  t: (key: string) => string;
+}> = ({ emoji, scenario, subtitle, badge, messages, objective, method, feedback, t }) => (
   <div className="relative bg-card rounded-2xl border border-border p-6 shadow-fluency-md hover:shadow-fluency-lg transition-all duration-300">
     <div className="absolute -top-3 right-4 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
       {badge}
@@ -511,7 +516,7 @@ const MethodCard: React.FC<{
         <span className="text-lg">{emoji}</span>
       </div>
       <div>
-        <p className="font-semibold text-foreground">Cenário: {scenario}</p>
+        <p className="font-semibold text-foreground">{t('landing.chat.scenario')}: {scenario}</p>
         <p className="text-xs text-muted-foreground">{subtitle}</p>
       </div>
     </div>
@@ -538,15 +543,15 @@ const MethodCard: React.FC<{
 
     <div className="pt-4 border-t border-border space-y-1.5">
       <div className="flex items-center gap-2 text-xs">
-        <span className="text-muted-foreground">Objetivo:</span>
+        <span className="text-muted-foreground">{t('landing.method.objective')}:</span>
         <span className="text-foreground font-medium">{objective}</span>
       </div>
       <div className="flex items-center gap-2 text-xs">
-        <span className="text-muted-foreground">Método:</span>
+        <span className="text-muted-foreground">{t('landing.method.methodLabel')}:</span>
         <span className="text-foreground font-medium">{method}</span>
       </div>
       <div className="flex items-center gap-2 text-xs">
-        <span className="text-muted-foreground">Feedback:</span>
+        <span className="text-muted-foreground">{t('landing.method.feedback')}:</span>
         <span className="text-foreground font-medium">{feedback}</span>
       </div>
     </div>

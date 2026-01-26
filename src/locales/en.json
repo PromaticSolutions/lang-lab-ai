@@ -1,0 +1,416 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "save": "Save",
+    "cancel": "Cancel",
+    "continue": "Continue",
+    "back": "Back",
+    "next": "Next",
+    "close": "Close",
+    "edit": "Edit",
+    "delete": "Delete",
+    "search": "Search",
+    "or": "or",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "achievements": "Achievements",
+    "ranking": "Leaderboard",
+    "history": "History",
+    "analytics": "Analytics",
+    "profile": "Profile",
+    "settings": "Settings",
+    "logout": "Logout",
+    "viewPlans": "View plans"
+  },
+  "landing": {
+    "nav": {
+      "features": "Features",
+      "howItWorks": "How It Works",
+      "pricing": "Pricing",
+      "login": "Sign In",
+      "getStarted": "Get Started"
+    },
+    "hero": {
+      "badge": "Accelerated learning with AI",
+      "title": "Master languages through",
+      "titleHighlight": "real conversations",
+      "description": "Practise English, Spanish, French and other languages in real-world scenarios with our advanced AI. Receive instant feedback and detailed progress analytics.",
+      "cta": "Start Free",
+      "demo": "Watch Demo",
+      "freeTrial": "7 days free",
+      "noCard": "No credit card required"
+    },
+    "stats": {
+      "activeUsers": "Active Users",
+      "conversations": "Conversations Held",
+      "languages": "Languages Available",
+      "satisfaction": "Satisfaction"
+    },
+    "method": {
+      "title": "How our teaching method works",
+      "subtitle": "Task-Based Language Teaching (TBLT)",
+      "badge": "Task-Based Learning",
+      "methodology": "TBLT Method",
+      "footer": "A methodology widely adopted at leading universities and language teaching programmes.",
+      "objective": "Objective",
+      "methodLabel": "Method",
+      "feedback": "Feedback",
+      "scenarios": {
+        "restaurant": "Restaurant",
+        "travel": "Travel",
+        "businessMeeting": "Business Meeting"
+      },
+      "objectives": {
+        "order": "Complete an order",
+        "checkin": "Check in at the airport",
+        "meeting": "Participate in a meeting"
+      },
+      "feedbackTypes": {
+        "communication": "Communication and clarity",
+        "vocabulary": "Vocabulary and context",
+        "fluency": "Fluency and formality"
+      }
+    },
+    "features": {
+      "title": "Features that boost your learning",
+      "subtitle": "Cutting-edge technology combined with proven methodology for real results",
+      "contextualConversations": {
+        "title": "Contextual Conversations",
+        "description": "Practise in real scenarios like restaurants, airports, business meetings and more."
+      },
+      "detailedAnalytics": {
+        "title": "Detailed Analytics",
+        "description": "Track your progress with grammar, vocabulary, fluency and pronunciation metrics."
+      },
+      "audioSupport": {
+        "title": "Audio Support",
+        "description": "Practise your pronunciation with speech recognition and detailed feedback."
+      },
+      "fiveLanguages": {
+        "title": "5 Languages",
+        "description": "English, Spanish, French, Italian and German available for practice."
+      },
+      "instantFeedback": {
+        "title": "Instant Feedback",
+        "description": "Receive corrections and suggestions in real time during your conversations."
+      },
+      "adaptiveLevels": {
+        "title": "Adaptive Levels",
+        "description": "The AI automatically adjusts difficulty according to your progress."
+      }
+    },
+    "howItWorks": {
+      "title": "How it works",
+      "subtitle": "Start practising in just 3 simple steps",
+      "step1": {
+        "title": "Choose a scenario",
+        "description": "Select from 8 real-world scenarios, from restaurants to business meetings."
+      },
+      "step2": {
+        "title": "Converse with the AI",
+        "description": "Practise natural conversations with our advanced AI that simulates real situations."
+      },
+      "step3": {
+        "title": "Receive feedback",
+        "description": "Analyse your performance with detailed metrics and improvement suggestions."
+      }
+    },
+    "pricing": {
+      "title": "Plans for every need",
+      "subtitle": "Start for free and upgrade as your needs grow",
+      "freeTrial": {
+        "name": "Free Trial",
+        "price": "Free",
+        "period": "for 7 days",
+        "features": ["2 scenarios available", "10 messages per day", "Basic feedback"],
+        "cta": "Start Free"
+      },
+      "beginner": {
+        "name": "Beginner",
+        "price": "€12.99",
+        "period": "/month",
+        "features": ["5 scenarios available", "Unlimited conversations", "Full feedback", "Unlimited history"],
+        "cta": "Subscribe Now"
+      },
+      "pro": {
+        "name": "Pro",
+        "price": "€24.99",
+        "period": "/month",
+        "badge": "Most Popular",
+        "features": ["7 scenarios available", "Audio support", "Pronunciation assessment", "Advanced analytics"],
+        "cta": "Subscribe Pro"
+      },
+      "fluencyPlus": {
+        "name": "Fluency Plus",
+        "price": "€129",
+        "period": "/year",
+        "badge": "Best Value",
+        "features": ["All 8 scenarios", "Everything in Pro", "Export to PDF", "Priority support"],
+        "cta": "Subscribe Yearly"
+      }
+    },
+    "cta": {
+      "title": "Ready to master a new language?",
+      "description": "Join thousands of people already learning languages more efficiently with Fluency AI.",
+      "button": "Get Started — It's Free"
+    },
+    "footer": {
+      "terms": "Terms of Use",
+      "privacy": "Privacy",
+      "contact": "Contact",
+      "copyright": "© 2024 Fluency AI. All rights reserved."
+    },
+    "chat": {
+      "scenario": "Scenario",
+      "level": "Intermediate Level",
+      "correctGrammar": "Correct grammar",
+      "realTimeFeedback": "Real Time",
+      "scenarios": "8+ Situations"
+    }
+  },
+  "auth": {
+    "login": "Sign In",
+    "register": "Create Account",
+    "email": "Email",
+    "password": "Password",
+    "fullName": "Full name",
+    "cpf": "Tax ID",
+    "forgotPassword": "Forgot password",
+    "loginButton": "Sign In",
+    "registerButton": "Create Account",
+    "loggingIn": "Signing in...",
+    "creatingAccount": "Creating account...",
+    "googleLogin": "Sign in with Google",
+    "googleContinue": "Continue with Google",
+    "errors": {
+      "invalidCredentials": "Invalid credentials",
+      "invalidCredentialsDesc": "Incorrect email or password.",
+      "loginError": "Login error",
+      "emailRegistered": "Email already registered",
+      "emailRegisteredDesc": "This email already has an account. Try signing in.",
+      "registerError": "Registration error",
+      "genericError": "An error occurred.",
+      "googleError": "Could not connect to Google."
+    },
+    "success": {
+      "welcomeBack": "Welcome back!",
+      "loginSuccess": "Login successful.",
+      "accountCreated": "Account created!",
+      "accountCreatedDesc": "Let's set up your profile."
+    }
+  },
+  "onboarding": {
+    "step1": {
+      "title": "Which language do you want to learn?",
+      "subtitle": "Choose the language you want to practise"
+    },
+    "step2": {
+      "title": "What is your level?",
+      "subtitle": "We'll adapt the conversations for you"
+    },
+    "step3": {
+      "title": "What is your weekly goal?",
+      "subtitle": "Set how many conversations you want to have"
+    },
+    "languages": {
+      "english": "English",
+      "spanish": "Spanish",
+      "french": "French",
+      "italian": "Italian",
+      "german": "German",
+      "portuguese": "Portuguese"
+    },
+    "levels": {
+      "basic": "Beginner",
+      "basicDesc": "I'm starting from scratch",
+      "intermediate": "Intermediate",
+      "intermediateDesc": "I know the basics",
+      "advanced": "Advanced",
+      "advancedDesc": "I want to refine my skills"
+    },
+    "goals": {
+      "2": "2 conversations/week",
+      "2Desc": "Relaxed pace",
+      "5": "5 conversations/week",
+      "5Desc": "Ideal balance",
+      "10": "10 conversations/week",
+      "10Desc": "Intensive learning"
+    },
+    "startPracticing": "Start practising",
+    "saving": "Saving...",
+    "success": {
+      "title": "Profile set up!",
+      "description": "Let's start practising."
+    },
+    "error": {
+      "title": "Error",
+      "description": "Could not save your preferences. Please try again."
+    }
+  },
+  "home": {
+    "welcome": "Welcome back,",
+    "student": "Student",
+    "subtitle": "Keep practising to reach your weekly goals",
+    "stats": {
+      "language": "Language",
+      "level": "Level",
+      "thisWeek": "This week",
+      "conversations": "conversations",
+      "weeklyGoal": "Weekly goal"
+    },
+    "quickActions": {
+      "achievements": "Achievements",
+      "achievementsDesc": "View your badges and unlock new ones",
+      "ranking": "Leaderboard",
+      "rankingDesc": "Compete with friends and groups"
+    },
+    "scenarios": {
+      "title": "Available Scenarios",
+      "unlocked": "unlocked",
+      "of": "of",
+      "startConversation": "Start conversation →"
+    },
+    "levelLabels": {
+      "basic": "Beginner (A1-A2)",
+      "intermediate": "Intermediate (B1-B2)",
+      "advanced": "Advanced (C1-C2)"
+    }
+  },
+  "chat": {
+    "typing": "Typing...",
+    "recording": "Recording...",
+    "processing": "Processing...",
+    "speaking": "Speaking...",
+    "online": "Online",
+    "inputPlaceholder": "Type your message...",
+    "finishButton": "Finish and generate feedback",
+    "analyzing": "Analysing conversation...",
+    "recordingIndicator": "Recording... Tap to send",
+    "sendingMessage": "Sending message...",
+    "scenarioNotFound": "Scenario not found",
+    "errors": {
+      "noCredits": "No credits",
+      "trialExpired": "Your trial period has expired.",
+      "messageLimitReached": "Message limit reached.",
+      "audioLimit": "Audio limit",
+      "upgradeForAudio": "Upgrade for unlimited audio.",
+      "sessionExpired": "Session expired. Please sign in again.",
+      "genericError": "Could not get a response.",
+      "audioError": "Audio error",
+      "processError": "Could not process your message.",
+      "tooShort": "Conversation too short",
+      "tooShortDesc": "Continue the conversation to receive more complete feedback.",
+      "analysisError": "Analysis error",
+      "analysisErrorDesc": "Could not analyse the conversation."
+    },
+    "translation": "Translation",
+    "scenarioLocked": "Scenario locked",
+    "scenarioLockedDesc": "Upgrade to access this scenario."
+  },
+  "profile": {
+    "title": "Profile",
+    "subtitle": "Manage your personal information",
+    "studyLanguage": "Study language",
+    "level": "Level",
+    "weeklyGoal": "Weekly goal",
+    "email": "Email",
+    "stats": {
+      "title": "Statistics",
+      "conversations": "Conversations",
+      "totalTime": "Total time",
+      "currentStreak": "Current streak",
+      "estimatedLevel": "Estimated level"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Customise your experience",
+    "subscription": {
+      "title": "Subscription",
+      "viewOrChange": "Tap to view or change your plan",
+      "manage": "Manage subscription",
+      "loading": "Loading...",
+      "error": "Could not open the subscription portal. Check if you have an active subscription."
+    },
+    "language": {
+      "title": "Language",
+      "appLanguage": "App language",
+      "studyLanguage": "Study language"
+    },
+    "preferences": {
+      "title": "Preferences",
+      "notifications": "Notifications",
+      "notificationsDesc": "Receive practice reminders",
+      "sounds": "App sounds",
+      "soundsDesc": "Sound effects and alerts",
+      "darkMode": "Dark mode",
+      "darkModeDesc": "Switch between light and dark theme",
+      "aiVoice": "AI Voice",
+      "femaleUS": "Female (US)"
+    },
+    "privacy": {
+      "title": "Privacy",
+      "privacyPolicy": "Privacy policy",
+      "termsOfUse": "Terms of use"
+    },
+    "dangerZone": {
+      "title": "Danger zone",
+      "deleteAccount": "Delete my account",
+      "deleteWarning": "This action is irreversible. All your data will be lost.",
+      "confirmDelete": "Are you sure you want to delete your account? This action cannot be undone."
+    },
+    "uiLanguage": {
+      "title": "Interface language",
+      "portuguese": "Português (BR)",
+      "english": "English (EN)"
+    }
+  },
+  "achievements": {
+    "title": "Your Achievements",
+    "unlocked": "unlocked",
+    "of": "of",
+    "all": "All",
+    "recent": "Recent Achievements",
+    "categories": {
+      "conversations": "Conversations",
+      "streaks": "Streaks",
+      "scores": "Scores",
+      "exploration": "Exploration",
+      "milestones": "Milestones"
+    }
+  },
+  "help": {
+    "buttonLabel": "Need Help"
+  },
+  "plans": {
+    "title": "Choose your plan",
+    "subtitle": "Unlock the full potential of Fluency AI",
+    "current": "Current",
+    "currentPlan": "Current plan",
+    "startFree": "Start free",
+    "subscribe": "Subscribe",
+    "processing": "Processing...",
+    "freeTrialActive": "Free Trial active!",
+    "freeTrialDesc": "Enjoy 7 days of free access.",
+    "loginFirst": "Sign in first",
+    "loginFirstDesc": "You need to be logged in to subscribe to a plan.",
+    "unavailable": "Plan not available for subscription.",
+    "checkoutError": "Could not start checkout. Please try again."
+  },
+  "welcome": {
+    "title": "Learn languages",
+    "titleHighlight": "by chatting with AI",
+    "subtitle": "Practise in real scenarios and receive instant feedback",
+    "features": {
+      "languages": "5 languages",
+      "adaptiveAI": "Adaptive AI",
+      "audio": "Audio"
+    },
+    "continue": "Continue"
+  }
+}
