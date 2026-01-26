@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useApp } from '@/contexts/AppContext';
 import { supabase } from '@/integrations/supabase/client';
 import { 
@@ -19,6 +20,7 @@ import { AppLayout } from '@/components/AppLayout';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const Profile: React.FC = () => {
+  const { t } = useTranslation();
   const { user, conversations, authUserId, updateUserProfile, isLoading: isAppLoading } = useApp();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -65,17 +67,18 @@ const Profile: React.FC = () => {
   }, [authUserId]);
 
   const languageLabels: Record<string, string> = {
-    english: 'Inglês',
-    spanish: 'Espanhol',
-    french: 'Francês',
-    italian: 'Italiano',
-    german: 'Alemão',
+    english: t('onboarding.languages.english'),
+    spanish: t('onboarding.languages.spanish'),
+    french: t('onboarding.languages.french'),
+    italian: t('onboarding.languages.italian'),
+    german: t('onboarding.languages.german'),
+    portuguese: t('onboarding.languages.portuguese'),
   };
 
   const levelLabels: Record<string, string> = {
-    basic: 'Básico',
-    intermediate: 'Intermediário',
-    advanced: 'Avançado',
+    basic: t('onboarding.levels.basic'),
+    intermediate: t('onboarding.levels.intermediate'),
+    advanced: t('onboarding.levels.advanced'),
   };
 
   const totalMinutes = conversations.reduce((acc, c) => {
@@ -125,8 +128,8 @@ const Profile: React.FC = () => {
     <AppLayout>
       <div className="p-6 lg:p-8 max-w-3xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-2xl lg:text-3xl font-bold text-foreground mb-2">Perfil</h1>
-          <p className="text-muted-foreground">Gerencie suas informações pessoais</p>
+          <h1 className="text-2xl lg:text-3xl font-bold text-foreground mb-2">{t('profile.title')}</h1>
+          <p className="text-muted-foreground">{t('profile.subtitle')}</p>
         </div>
 
         <div className="space-y-6">
@@ -162,13 +165,13 @@ const Profile: React.FC = () => {
                     ) : (
                       <Save className="w-4 h-4 mr-1" />
                     )}
-                    Salvar
+                    {t('common.save')}
                   </Button>
                 </div>
               ) : (
                 <Button size="sm" variant="outline" onClick={() => setIsEditing(true)}>
                   <Edit2 className="w-4 h-4 mr-1" />
-                  Editar
+                  {t('common.edit')}
                 </Button>
               )}
             </div>
@@ -176,22 +179,22 @@ const Profile: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <InfoItem 
                 icon={<Globe className="w-5 h-5" />}
-                label="Idioma de estudo"
+                label={t('profile.studyLanguage')}
                 value={user ? languageLabels[user.language] || user.language : '-'}
               />
               <InfoItem 
                 icon={<Target className="w-5 h-5" />}
-                label="Nível"
+                label={t('profile.level')}
                 value={user ? levelLabels[user.level] || user.level : '-'}
               />
               <InfoItem 
                 icon={<Target className="w-5 h-5" />}
-                label="Meta semanal"
-                value={`${user?.weeklyGoal || 0} conversas`}
+                label={t('profile.weeklyGoal')}
+                value={`${user?.weeklyGoal || 0} ${t('home.stats.conversations')}`}
               />
               <InfoItem 
                 icon={<Mail className="w-5 h-5" />}
-                label="Email"
+                label={t('profile.email')}
                 value={user?.email || '-'}
               />
             </div>
@@ -199,7 +202,7 @@ const Profile: React.FC = () => {
 
           {/* Stats Card */}
           <div className="bg-card rounded-xl border border-border p-6">
-            <h3 className="font-semibold text-foreground mb-4">Estatísticas</h3>
+            <h3 className="font-semibold text-foreground mb-4">{t('profile.stats.title')}</h3>
             
             {isLoadingStats ? (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -216,23 +219,23 @@ const Profile: React.FC = () => {
                 <StatItem 
                   icon={<MessageSquare className="w-5 h-5" />}
                   value={profileStats.totalConversations.toString()}
-                  label="Conversas"
+                  label={t('profile.stats.conversations')}
                 />
                 <StatItem 
                   icon={<Clock className="w-5 h-5" />}
                   value={`${totalMinutes} min`}
-                  label="Tempo total"
+                  label={t('profile.stats.totalTime')}
                 />
                 <StatItem 
                   icon={<Flame className="w-5 h-5" />}
                   value={profileStats.currentStreak.toString()}
-                  label="Sequência atual"
+                  label={t('profile.stats.currentStreak')}
                   highlight={profileStats.currentStreak >= 3}
                 />
                 <StatItem 
                   icon={<Target className="w-5 h-5" />}
                   value={profileStats.currentLevel}
-                  label="Nível estimado"
+                  label={t('profile.stats.estimatedLevel')}
                 />
               </div>
             )}

@@ -162,8 +162,8 @@ serve(async (req) => {
       return validation.error;
     }
 
-    const { messages, scenarioId, userLevel, userLanguage, adaptiveLevel, includeInstantFeedback } = validation.data;
-    logStep("Request validated", { userId, scenarioId, userLevel, userLanguage, adaptiveLevel, messageCount: messages?.length });
+    const { messages, scenarioId, userLevel, userLanguage, adaptiveLevel, includeInstantFeedback, uiLanguage } = validation.data;
+    logStep("Request validated", { userId, scenarioId, userLevel, userLanguage, adaptiveLevel, uiLanguage, messageCount: messages?.length });
 
     // Server-side credit check and deduction
     const creditResult = await checkAndDeductCredits(userId, false, corsHeaders);
@@ -188,8 +188,11 @@ serve(async (req) => {
     // Instruções de nível
     const levelInstruction = adaptiveLevelInstructions[adaptiveLevel || ''] || adaptiveLevelInstructions[userLevel || ''] || adaptiveLevelInstructions.intermediate;
 
-    // Prompt com feedback instantâneo
-    const instantFeedbackInstruction = includeInstantFeedback ? `
+    // Determine feedback language based on UI language
+    const feedbackInPortuguese = !uiLanguage || uiLanguage.startsWith('pt');
+    
+    // Prompt com feedback instantâneo - adapts based on UI language
+    const instantFeedbackInstruction = includeInstantFeedback ? (feedbackInPortuguese ? `
 
 INSTANT FEEDBACK (IMPORTANT):
 After each response in ${langConfig.name}, add a separator "---" and provide a BRIEF tip in Portuguese (Brazilian):
@@ -203,7 +206,21 @@ Example format:
 [Your response in ${langConfig.name}]
 
 ---
-💡 Dica: Quando pedir comida, use "I would like..." em vez de "I want..." para ser mais educado.` : '';
+💡 Dica: Quando pedir comida, use "I would like..." em vez de "I want..." para ser mais educado.` : `
+
+INSTANT FEEDBACK (IMPORTANT):
+After each response in ${langConfig.name}, add a separator "---" and provide a BRIEF tip in English:
+- If the user made a small error, gently mention the correct form
+- Give a contextual tip relevant to the scenario
+- Keep it to 1-2 sentences maximum
+- Format: "💡 Tip: [your tip in English]"
+- If the user did well, give encouragement: "✨ [positive feedback in English]"
+
+Example format:
+[Your response in ${langConfig.name}]
+
+---
+💡 Tip: When ordering food, use "I would like..." instead of "I want..." to sound more polite.`) : '';
 
     const systemPrompt = `${langConfig.instruction}
 

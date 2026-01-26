@@ -23,6 +23,7 @@ export const ChatRequestSchema = z.object({
   userLanguage: z.enum(VALID_LANGUAGES).optional().default('english'),
   adaptiveLevel: z.enum(VALID_LEVELS).optional(),
   includeInstantFeedback: z.boolean().optional().default(false),
+  uiLanguage: z.string().optional(), // UI language for feedback (pt-BR or en)
 });
 
 // Analyze conversation request validation
