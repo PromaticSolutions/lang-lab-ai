@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Send, Loader2, MessageSquare, Phone, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,6 +22,7 @@ const SUPPORT_CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/supp
 const WHATSAPP_NUMBER = '5511934476935';
 
 export function SupportChat({ isOpen, onClose }: SupportChatProps) {
+  const { t, i18n } = useTranslation();
   const { user } = useApp();
   const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -30,12 +32,18 @@ export function SupportChat({ isOpen, onClose }: SupportChatProps) {
   const [showEscalation, setShowEscalation] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  const getGreeting = () => {
+    const name = user?.name?.split(' ')[0];
+    const baseGreeting = t('support.greeting');
+    return name ? baseGreeting.replace('!', `, ${name}!`) : baseGreeting;
+  };
+
   useEffect(() => {
     if (isOpen && messages.length === 0) {
       setMessages([{
         id: '1',
         role: 'assistant',
-        content: `Olá${user?.name ? `, ${user.name.split(' ')[0]}` : ''}! 👋 Sou o assistente de suporte do Fluency IA. Como posso ajudar você hoje?`
+        content: getGreeting()
       }]);
       createTicket();
     }
@@ -53,7 +61,7 @@ export function SupportChat({ isOpen, onClose }: SupportChatProps) {
         .from('support_tickets')
         .insert({
           user_id: user.id,
-          user_name: user.name || 'Usuário',
+          user_name: user.name || t('home.student'),
           user_email: user.email,
           description: 'Ticket criado automaticamente',
           status: 'open',
@@ -105,8 +113,8 @@ export function SupportChat({ isOpen, onClose }: SupportChatProps) {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) {
         toast({
-          title: "Sessão expirada",
-          description: "Faça login novamente.",
+          title: t('chat.errors.sessionExpired').split('.')[0],
+          description: t('chat.errors.sessionExpired').split('.')[1] || t('chat.errors.sessionExpired'),
           variant: "destructive",
         });
         return;
@@ -126,7 +134,7 @@ export function SupportChat({ isOpen, onClose }: SupportChatProps) {
       });
 
       if (!response.ok) {
-        throw new Error('Falha ao obter resposta');
+        throw new Error('Failed to get response');
       }
 
       const reader = response.body?.getReader();
@@ -192,8 +200,8 @@ export function SupportChat({ isOpen, onClose }: SupportChatProps) {
     } catch (error) {
       console.error('Support chat error:', error);
       toast({
-        title: "Erro",
-        description: "Não foi possível enviar a mensagem.",
+        title: t('leaderboard.toast.error'),
+        description: t('chat.errors.genericError'),
         variant: "destructive",
       });
     } finally {
@@ -203,7 +211,9 @@ export function SupportChat({ isOpen, onClose }: SupportChatProps) {
 
   const handleWhatsApp = () => {
     const message = encodeURIComponent(
-      `Olá, me chamo ${user?.name || 'Usuário'} e preciso de ajuda. Ticket: ${ticketId || 'N/A'}`
+      i18n.language === 'en' 
+        ? `Hello, my name is ${user?.name || 'User'} and I need help. Ticket: ${ticketId ? `#${ticketId.slice(-6).toUpperCase()}` : 'N/A'}`
+        : `Olá, me chamo ${user?.name || 'Usuário'} e preciso de ajuda. Ticket: ${ticketId ? `#${ticketId.slice(-6).toUpperCase()}` : 'N/A'}`
     );
     window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${message}`, '_blank');
     
@@ -246,9 +256,9 @@ export function SupportChat({ isOpen, onClose }: SupportChatProps) {
               <MessageSquare className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h3 className="font-semibold text-white">Suporte Fluency IA</h3>
+              <h3 className="font-semibold text-white">{t('support.title')}</h3>
               <p className="text-xs text-white/70">
-                {ticketId ? `#${ticketId.slice(-6).toUpperCase()}` : 'Online'}
+                {ticketId ? `#${ticketId.slice(-6).toUpperCase()}` : t('support.online')}
               </p>
             </div>
           </div>
@@ -298,7 +308,7 @@ export function SupportChat({ isOpen, onClose }: SupportChatProps) {
         {showEscalation && (
           <div className="px-4 py-3 bg-muted/50 border-t border-border">
             <p className="text-xs text-muted-foreground mb-2">
-              Não conseguimos resolver? Fale com um atendente:
+              {t('support.escalation.description')}
             </p>
             <Button
               variant="outline"
@@ -307,7 +317,7 @@ export function SupportChat({ isOpen, onClose }: SupportChatProps) {
               className="w-full gap-2"
             >
               <Phone className="w-4 h-4" />
-              Falar no WhatsApp
+              {t('support.escalation.whatsapp')}
               <ExternalLink className="w-3 h-3" />
             </Button>
           </div>
@@ -319,7 +329,7 @@ export function SupportChat({ isOpen, onClose }: SupportChatProps) {
             <Input
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              placeholder="Digite sua mensagem..."
+              placeholder={t('support.inputPlaceholder')}
               className="flex-1"
               onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
               disabled={isLoading}

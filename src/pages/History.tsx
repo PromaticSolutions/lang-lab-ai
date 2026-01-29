@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useConversations } from '@/hooks/useConversations';
 import { scenarios } from '@/data/scenarios';
 import { 
@@ -27,6 +28,7 @@ import {
 
 const History: React.FC = () => {
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
   const [authUserId, setAuthUserId] = useState<string | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState('');
   const [scenarioFilter, setScenarioFilter] = useState<string>('all');
@@ -45,15 +47,20 @@ const History: React.FC = () => {
 
   const getScenario = (id: string) => scenarios.find(s => s.id === id);
 
+  const getScenarioTitle = (scenario: typeof scenarios[0] | undefined) => {
+    if (!scenario) return t('chat.scenarioNotFound');
+    return scenario.titleKey ? t(scenario.titleKey) : scenario.title || scenario.id;
+  };
+
   const formatDate = (date: Date) => {
     const now = new Date();
     const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
     
-    if (diffDays === 0) return 'Hoje';
-    if (diffDays === 1) return 'Ontem';
-    if (diffDays < 7) return `${diffDays} dias atrás`;
+    if (diffDays === 0) return t('history.date.today');
+    if (diffDays === 1) return t('history.date.yesterday');
+    if (diffDays < 7) return `${diffDays} ${t('history.date.daysAgo')}`;
     
-    return new Intl.DateTimeFormat('pt-BR', {
+    return new Intl.DateTimeFormat(i18n.language === 'en' ? 'en-US' : 'pt-BR', {
       day: '2-digit',
       month: 'short',
     }).format(date);
@@ -75,7 +82,8 @@ const History: React.FC = () => {
   const filteredConversations = conversations
     .filter(conv => {
       const scenario = getScenario(conv.scenarioId);
-      const matchesSearch = scenario?.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      const scenarioTitle = getScenarioTitle(scenario);
+      const matchesSearch = scenarioTitle.toLowerCase().includes(searchQuery.toLowerCase()) || 
                            searchQuery === '';
       const matchesScenario = scenarioFilter === 'all' || conv.scenarioId === scenarioFilter;
       return matchesSearch && matchesScenario;
@@ -107,8 +115,8 @@ const History: React.FC = () => {
       <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-2xl lg:text-3xl font-bold text-foreground mb-2">Histórico</h1>
-          <p className="text-muted-foreground">Suas conversas e progresso</p>
+          <h1 className="text-2xl lg:text-3xl font-bold text-foreground mb-2">{t('history.title')}</h1>
+          <p className="text-muted-foreground">{t('history.subtitle')}</p>
         </div>
 
         {/* Stats Cards */}
@@ -116,15 +124,15 @@ const History: React.FC = () => {
           <div className="grid grid-cols-3 gap-3 mb-6">
             <div className="bg-card rounded-xl border border-border p-4 text-center">
               <p className="text-2xl font-bold text-foreground">{totalConversations}</p>
-              <p className="text-xs text-muted-foreground">Conversas</p>
+              <p className="text-xs text-muted-foreground">{t('history.stats.conversations')}</p>
             </div>
             <div className="bg-card rounded-xl border border-border p-4 text-center">
               <p className="text-2xl font-bold text-primary">{avgScore}</p>
-              <p className="text-xs text-muted-foreground">Score médio</p>
+              <p className="text-xs text-muted-foreground">{t('history.stats.avgScore')}</p>
             </div>
             <div className="bg-card rounded-xl border border-border p-4 text-center">
               <p className="text-2xl font-bold text-foreground">{totalMinutes}</p>
-              <p className="text-xs text-muted-foreground">Min praticados</p>
+              <p className="text-xs text-muted-foreground">{t('history.stats.minPracticed')}</p>
             </div>
           </div>
         )}
@@ -135,7 +143,7 @@ const History: React.FC = () => {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Buscar conversas..."
+                placeholder={t('history.search')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
@@ -144,15 +152,15 @@ const History: React.FC = () => {
             <Select value={scenarioFilter} onValueChange={setScenarioFilter}>
               <SelectTrigger className="w-full sm:w-[180px]">
                 <Filter className="w-4 h-4 mr-2" />
-                <SelectValue placeholder="Cenário" />
+                <SelectValue placeholder={t('history.filters.scenario')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todos os cenários</SelectItem>
+                <SelectItem value="all">{t('history.filters.allScenarios')}</SelectItem>
                 {usedScenarios.map(id => {
                   const scenario = getScenario(id);
                   return scenario ? (
                     <SelectItem key={id} value={id}>
-                      {scenario.icon} {scenario.title}
+                      {scenario.icon} {getScenarioTitle(scenario)}
                     </SelectItem>
                   ) : null;
                 })}
@@ -161,11 +169,11 @@ const History: React.FC = () => {
             <Select value={sortOrder} onValueChange={(v) => setSortOrder(v as 'recent' | 'score')}>
               <SelectTrigger className="w-full sm:w-[160px]">
                 <TrendingUp className="w-4 h-4 mr-2" />
-                <SelectValue placeholder="Ordenar" />
+                <SelectValue placeholder={t('history.filters.sort')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="recent">Mais recentes</SelectItem>
-                <SelectItem value="score">Maior score</SelectItem>
+                <SelectItem value="recent">{t('history.filters.recent')}</SelectItem>
+                <SelectItem value="score">{t('history.filters.highScore')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -174,13 +182,13 @@ const History: React.FC = () => {
         {isLoading ? (
           <div className="text-center py-16 bg-card rounded-xl border border-border">
             <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
-            <p className="text-muted-foreground">Carregando conversas...</p>
+            <p className="text-muted-foreground">{t('history.loading')}</p>
           </div>
         ) : error ? (
           <div className="text-center py-16 bg-card rounded-xl border border-border">
             <p className="text-destructive mb-4">{error}</p>
             <Button onClick={() => window.location.reload()}>
-              Tentar novamente
+              {t('history.tryAgain')}
             </Button>
           </div>
         ) : filteredConversations.length === 0 ? (
@@ -189,16 +197,16 @@ const History: React.FC = () => {
               <MessageSquare className="w-8 h-8 text-muted-foreground" />
             </div>
             <h3 className="font-semibold text-foreground mb-2">
-              {conversations.length === 0 ? 'Nenhuma conversa ainda' : 'Nenhum resultado'}
+              {conversations.length === 0 ? t('history.empty.noConversations') : t('history.empty.noResults')}
             </h3>
             <p className="text-muted-foreground mb-6">
               {conversations.length === 0 
-                ? 'Comece uma conversa para ver seu histórico' 
-                : 'Tente ajustar os filtros'}
+                ? t('history.empty.startFirst')
+                : t('history.empty.adjustFilters')}
             </p>
             {conversations.length === 0 && (
               <Button onClick={() => navigate('/home')}>
-                Iniciar primeira conversa
+                {t('history.startFirst')}
               </Button>
             )}
           </div>
@@ -228,7 +236,7 @@ const History: React.FC = () => {
                   
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-foreground mb-1 truncate group-hover:text-primary transition-colors">
-                      {scenario?.title || 'Conversa'}
+                      {getScenarioTitle(scenario)}
                     </h3>
                     <div className="flex items-center gap-3 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">

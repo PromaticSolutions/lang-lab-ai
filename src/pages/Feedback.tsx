@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { ConversationFeedback } from '@/types';
 import { scenarios } from '@/data/scenarios';
@@ -14,6 +15,7 @@ import { achievements as allAchievements } from '@/data/achievements';
 const Feedback: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useTranslation();
   const { authUserId } = useApp();
   const { feedback, scenarioId, userLanguage } = location.state as { 
     feedback: ConversationFeedback; 
@@ -25,6 +27,7 @@ const Feedback: React.FC = () => {
   const [newAchievements, setNewAchievements] = useState<string[]>([]);
 
   const scenario = scenarios.find(s => s.id === scenarioId);
+  const scenarioTitle = scenario?.titleKey ? t(scenario.titleKey) : scenario?.title || scenarioId;
 
   // Check for new achievements after conversation
   useEffect(() => {
@@ -123,11 +126,11 @@ const Feedback: React.FC = () => {
   };
 
   const metrics = [
-    { label: 'Gramática', value: feedback.grammar },
-    { label: 'Vocabulário', value: feedback.vocabulary },
-    { label: 'Clareza', value: feedback.clarity },
-    { label: 'Fluência', value: feedback.fluency },
-    { label: 'Coerência', value: feedback.contextCoherence },
+    { label: t('feedback.metrics.grammar'), value: feedback.grammar },
+    { label: t('feedback.metrics.vocabulary'), value: feedback.vocabulary },
+    { label: t('feedback.metrics.clarity'), value: feedback.clarity },
+    { label: t('feedback.metrics.fluency'), value: feedback.fluency },
+    { label: t('feedback.metrics.coherence'), value: feedback.contextCoherence },
   ];
 
   const newAchievementData = newAchievements.map(id => {
@@ -147,8 +150,8 @@ const Feedback: React.FC = () => {
             <ArrowLeft className="w-5 h-5 text-white" />
           </button>
           <div>
-            <h1 className="text-lg sm:text-xl font-bold text-white">Feedback</h1>
-            <p className="text-white/80 text-sm">{scenario?.title}</p>
+            <h1 className="text-lg sm:text-xl font-bold text-white">{t('feedback.title')}</h1>
+            <p className="text-white/80 text-sm">{scenarioTitle}</p>
           </div>
         </div>
       </div>
@@ -160,9 +163,9 @@ const Feedback: React.FC = () => {
             <div className={`text-5xl font-bold ${getScoreColor(feedback.overallScore)} mb-2`}>
               {feedback.overallScore}
             </div>
-            <p className="text-muted-foreground">Pontuação Geral</p>
+            <p className="text-muted-foreground">{t('feedback.overallScore')}</p>
             <p className="text-sm font-medium text-primary mt-1">
-              Nível estimado: {feedback.estimatedLevel}
+              {t('feedback.estimatedLevel')}: {feedback.estimatedLevel}
             </p>
           </div>
 
@@ -193,7 +196,7 @@ const Feedback: React.FC = () => {
         <div className="px-4 mt-6 max-w-3xl mx-auto">
           <h2 className="text-lg font-bold text-foreground mb-3 flex items-center gap-2">
             <Trophy className="w-5 h-5 text-yellow-500" />
-            Novas Conquistas!
+            {t('feedback.newAchievements')}
           </h2>
           <div className="space-y-3">
             {newAchievementData.map((achievement) => achievement && (
@@ -207,7 +210,7 @@ const Feedback: React.FC = () => {
       <div className="px-4 mt-6 max-w-3xl mx-auto">
         <h2 className="text-lg font-bold text-foreground mb-3 flex items-center gap-2">
           <X className="w-5 h-5 text-destructive" />
-          Principais Erros
+          {t('feedback.mainErrors')}
         </h2>
         <div className="space-y-3">
           {feedback.errors.length > 0 ? (
@@ -226,7 +229,7 @@ const Feedback: React.FC = () => {
               </div>
             ))
           ) : (
-            <p className="text-muted-foreground text-sm">Nenhum erro encontrado. Excelente trabalho!</p>
+            <p className="text-muted-foreground text-sm">{t('feedback.noErrors')}</p>
           )}
         </div>
       </div>
@@ -235,7 +238,7 @@ const Feedback: React.FC = () => {
       <div className="px-4 mt-6 max-w-3xl mx-auto">
         <h2 className="text-lg font-bold text-foreground mb-3 flex items-center gap-2">
           <Check className="w-5 h-5 text-success" />
-          O que você acertou
+          {t('feedback.correctPhrases')}
         </h2>
         <div className="space-y-2">
           {feedback.correctPhrases.length > 0 ? (
@@ -248,7 +251,7 @@ const Feedback: React.FC = () => {
               </div>
             ))
           ) : (
-            <p className="text-muted-foreground text-sm">Continue praticando para acertar mais!</p>
+            <p className="text-muted-foreground text-sm">{t('feedback.keepPracticing')}</p>
           )}
         </div>
       </div>
@@ -257,7 +260,7 @@ const Feedback: React.FC = () => {
       <div className="px-4 mt-6 max-w-3xl mx-auto">
         <h2 className="text-lg font-bold text-foreground mb-3 flex items-center gap-2">
           <TrendingUp className="w-5 h-5 text-primary" />
-          O que melhorar
+          {t('feedback.improvements')}
         </h2>
         <div className="space-y-2">
           {feedback.improvements.length > 0 ? (
@@ -270,7 +273,7 @@ const Feedback: React.FC = () => {
               </div>
             ))
           ) : (
-            <p className="text-muted-foreground text-sm">Continue assim! Seu desempenho está ótimo.</p>
+            <p className="text-muted-foreground text-sm">{t('feedback.greatJob')}</p>
           )}
         </div>
       </div>
@@ -279,7 +282,7 @@ const Feedback: React.FC = () => {
       <div className="px-4 mt-8 space-y-3 max-w-3xl mx-auto">
         <Button size="lg" className="w-full" onClick={() => navigate('/home')}>
           <Home className="w-5 h-5 mr-2" />
-          Voltar ao início
+          {t('feedback.backToHome')}
         </Button>
         <Button 
           variant="outline" 
@@ -288,7 +291,7 @@ const Feedback: React.FC = () => {
           onClick={() => navigate(`/chat/${scenarioId}`)}
         >
           <RotateCcw className="w-5 h-5 mr-2" />
-          Tentar novamente
+          {t('feedback.tryAgain')}
         </Button>
       </div>
     </div>

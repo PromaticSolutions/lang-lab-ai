@@ -20,8 +20,10 @@ export interface User {
 
 export interface Scenario {
   id: string;
-  title: string;
-  description: string;
+  title?: string;
+  description?: string;
+  titleKey?: string;
+  descriptionKey?: string;
   icon: string;
   color: string;
   requiredPlan: PlanType[];
