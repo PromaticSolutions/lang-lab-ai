@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useApp } from '@/contexts/AppContext';
@@ -77,6 +78,7 @@ interface InstantFeedback {
 
 const Chat: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { scenarioId } = useParams<{ scenarioId: string }>();
   const { user } = useApp();
   const { toast } = useToast();
@@ -569,9 +571,9 @@ const Chat: React.FC = () => {
           <span className="text-xl">{scenario.icon}</span>
         </div>
         <div className="flex-1 min-w-0">
-          <h1 className="font-semibold text-foreground truncate">{scenario.title}</h1>
+          <h1 className="font-semibold text-foreground truncate">{scenario.titleKey ? t(scenario.titleKey) : scenario.title}</h1>
           <p className="text-xs text-muted-foreground">
-            {isTyping ? 'Digitando...' : isRecording ? 'Gravando...' : isTranscribing ? 'Processando...' : isSpeaking || isTTSLoading ? 'Falando...' : 'Online'}
+            {isTyping ? t('chat.typing') : isRecording ? t('chat.recording') : isTranscribing ? t('chat.processing') : isSpeaking || isTTSLoading ? t('chat.speaking') : t('chat.online')}
           </p>
         </div>
         

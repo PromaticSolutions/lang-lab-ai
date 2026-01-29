@@ -412,5 +412,181 @@
       "audio": "Audio"
     },
     "continue": "Continue"
+  },
+  "history": {
+    "title": "History",
+    "subtitle": "Your conversations and progress",
+    "stats": {
+      "conversations": "Conversations",
+      "avgScore": "Avg score",
+      "minPracticed": "Min practiced"
+    },
+    "search": "Search conversations...",
+    "filters": {
+      "scenario": "Scenario",
+      "allScenarios": "All scenarios",
+      "sort": "Sort",
+      "recent": "Most recent",
+      "highScore": "Highest score"
+    },
+    "loading": "Loading conversations...",
+    "tryAgain": "Try again",
+    "empty": {
+      "noConversations": "No conversations yet",
+      "noResults": "No results",
+      "startFirst": "Start a conversation to see your history",
+      "adjustFilters": "Try adjusting the filters"
+    },
+    "startFirst": "Start first conversation",
+    "date": {
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "daysAgo": "days ago"
+    }
+  },
+  "leaderboard": {
+    "title": "Ranking & Competition",
+    "subtitle": "Challenge your friends and see who improves fastest",
+    "tabs": {
+      "global": "Global",
+      "friends": "Friends",
+      "groups": "Groups"
+    },
+    "global": {
+      "title": "Global Ranking",
+      "top50": "Top 50",
+      "empty": "No users in ranking yet.",
+      "beFirst": "Be the first to practice!"
+    },
+    "friends": {
+      "title": "Friends Ranking",
+      "addFriend": "Add Friend",
+      "emailPlaceholder": "Friend's email",
+      "empty": "Add friends to compete!",
+      "useEmail": "Use their email to connect."
+    },
+    "groups": {
+      "title": "Groups",
+      "createGroup": "Create Group",
+      "joinGroup": "Join Group",
+      "groupNamePlaceholder": "Group name",
+      "inviteCodePlaceholder": "Invite code",
+      "create": "Create",
+      "join": "Join",
+      "myGroups": "My Groups",
+      "empty": "You're not part of any group yet.",
+      "createOrJoin": "Create one or ask for an invite code!"
+    },
+    "stats": {
+      "conversations": "Conversations",
+      "streak": "Streak",
+      "level": "Level"
+    },
+    "you": "(you)",
+    "toast": {
+      "userNotFound": "User not found",
+      "userNotFoundDesc": "We couldn't find a user with this email.",
+      "cannotAddSelf": "Oops!",
+      "cannotAddSelfDesc": "You can't add yourself.",
+      "alreadyFriends": "Already friends",
+      "alreadyFriendsDesc": "You're already connected or there's a pending request.",
+      "friendAdded": "Friend added!",
+      "friendAddedDesc": "You can now compete together.",
+      "error": "Error",
+      "errorAddFriend": "Could not add friend.",
+      "groupCreated": "Group created!",
+      "groupCreatedDesc": "Share the code:",
+      "errorCreateGroup": "Could not create group.",
+      "groupNotFound": "Group not found",
+      "groupNotFoundDesc": "Invalid invite code.",
+      "alreadyMember": "Already a member",
+      "alreadyMemberDesc": "You're already part of this group.",
+      "joinedGroup": "Joined the group!",
+      "joinedGroupDesc": "You're now part of",
+      "errorJoinGroup": "Could not join group.",
+      "codeCopied": "Code copied!",
+      "codeCopiedDesc": "Share with your friends."
+    }
+  },
+  "groupModal": {
+    "inviteCode": "Invite Code",
+    "members": "Members",
+    "noMembers": "No members found.",
+    "admin": "Admin",
+    "deleteGroup": "Delete Group",
+    "leaveGroup": "Leave Group",
+    "leftGroup": "Left the group",
+    "leftGroupDesc": "You left",
+    "errorLeave": "Could not leave group.",
+    "deletedGroup": "Group deleted",
+    "deletedGroupDesc": "The group has been deleted.",
+    "errorDelete": "Could not delete group.",
+    "errorLoadMembers": "Could not load group members."
+  },
+  "scenarios": {
+    "restaurant": {
+      "title": "Restaurant",
+      "description": "Order food and talk to the waiter"
+    },
+    "interview": {
+      "title": "Interview",
+      "description": "Practice professional responses"
+    },
+    "airport": {
+      "title": "Airport",
+      "description": "Check-in, immigration and boarding"
+    },
+    "hotel": {
+      "title": "Hotel",
+      "description": "Reservations, requests and issues"
+    },
+    "shopping": {
+      "title": "Shopping",
+      "description": "Ask about prices, sizes and compare items"
+    },
+    "business": {
+      "title": "Business Meeting",
+      "description": "Converse professionally"
+    },
+    "hospital": {
+      "title": "Hospital",
+      "description": "Describe symptoms and receive instructions"
+    },
+    "transport": {
+      "title": "Uber/Transport",
+      "description": "Talk to the driver"
+    }
+  },
+  "support": {
+    "title": "Fluency AI Support",
+    "greeting": "Hello! 👋 I'm the Fluency AI support assistant. How can I help you today?",
+    "inputPlaceholder": "Type your message...",
+    "online": "Online",
+    "escalation": {
+      "title": "Need more help?",
+      "description": "If you need more assistance, contact our support team directly:",
+      "whatsapp": "Contact via WhatsApp"
+    }
+  },
+  "feedback": {
+    "title": "Feedback",
+    "overallScore": "Overall Score",
+    "estimatedLevel": "Estimated level",
+    "metrics": {
+      "grammar": "Grammar",
+      "vocabulary": "Vocabulary",
+      "clarity": "Clarity",
+      "fluency": "Fluency",
+      "coherence": "Coherence"
+    },
+    "newAchievements": "New Achievements!",
+    "mainErrors": "Main Errors",
+    "noErrors": "No errors found. Excellent work!",
+    "correctPhrases": "What you got right",
+    "keepPracticing": "Keep practicing to get more right!",
+    "improvements": "What to improve",
+    "greatJob": "Keep it up! Your performance is great.",
+    "backToHome": "Back to home",
+    "tryAgain": "Try again"
   }
 }

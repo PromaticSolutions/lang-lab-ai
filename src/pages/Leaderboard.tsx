@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AppLayout } from '@/components/AppLayout';
 import { useApp } from '@/contexts/AppContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -61,6 +62,7 @@ const RankingRowSkeleton = () => (
 );
 
 const Leaderboard: React.FC = () => {
+  const { t } = useTranslation();
   const { authUserId } = useApp();
   const { toast } = useToast();
   
@@ -98,77 +100,55 @@ const Leaderboard: React.FC = () => {
         .order('total_conversations', { ascending: false })
         .limit(50);
 
-      if (error) {
-        console.error('Error fetching global ranking:', error);
-        throw error;
-      }
+      if (error) throw error;
       
-      console.log('[Leaderboard] Global ranking data:', data?.length || 0, 'users');
-      // Map to RankingUser with null avatar_url (not exposed in view for privacy)
-      setGlobalRanking((data || []).map(d => ({ ...d, avatar_url: null })) as RankingUser[]);
+      // Map results to include avatar_url as null since view doesn't include it
+      setGlobalRanking((data || []).map(u => ({ ...u, avatar_url: null })));
     } catch (error) {
       console.error('Error fetching global ranking:', error);
-      toast({
-        title: "Erro ao carregar ranking",
-        description: "Tente novamente em alguns instantes.",
-        variant: "destructive",
-      });
     } finally {
       setIsLoadingGlobal(false);
     }
-  }, [authUserId, toast]);
+  }, [authUserId]);
 
   // Fetch friends ranking
   const fetchFriendsRanking = useCallback(async () => {
     if (!authUserId) return;
     setIsLoadingFriends(true);
     try {
-      // Get all friendships where user is involved and status is accepted
+      // Get friendships where current user is involved
       const { data: friendships, error: friendshipsError } = await supabase
         .from('friendships')
         .select('user_id, friend_id, status')
         .or(`user_id.eq.${authUserId},friend_id.eq.${authUserId}`)
         .eq('status', 'accepted');
 
-      if (friendshipsError) {
-        console.error('Error fetching friendships:', friendshipsError);
-        throw friendshipsError;
+      if (friendshipsError) throw friendshipsError;
+
+      // Get unique friend IDs
+      const friendIds = friendships?.map(f => 
+        f.user_id === authUserId ? f.friend_id : f.user_id
+      ) || [];
+
+      // Always include current user
+      const allIds = [...new Set([...friendIds, authUserId])];
+
+      if (allIds.length === 0) {
+        setFriendsRanking([]);
+        setIsLoadingFriends(false);
+        return;
       }
 
-      console.log('[Leaderboard] Friendships found:', friendships?.length || 0);
+      // Fetch profiles for friends and current user from secure view
+      const { data: profiles, error: profilesError } = await supabase
+        .from('user_rankings')
+        .select('user_id, name, total_conversations, current_streak, longest_streak, current_adaptive_level')
+        .in('user_id', allIds)
+        .order('total_conversations', { ascending: false });
 
-      if (friendships && friendships.length > 0) {
-        // Extract friend IDs (the other person in the relationship)
-        const friendIds = friendships.map(f => 
-          f.user_id === authUserId ? f.friend_id : f.user_id
-        );
-        
-        console.log('[Leaderboard] Friend IDs:', friendIds);
-        
-        // Use secure view for friends ranking (excludes email, exposes only ranking data)
-        const { data: profiles, error: profilesError } = await supabase
-          .from('user_rankings')
-          .select('user_id, name, total_conversations, current_streak, longest_streak, current_adaptive_level')
-          .in('user_id', [...friendIds, authUserId])
-          .order('total_conversations', { ascending: false });
-        
-        if (profilesError) {
-          console.error('Error fetching friend profiles:', profilesError);
-          throw profilesError;
-        }
-        
-        console.log('[Leaderboard] Friends ranking profiles:', profiles?.length || 0);
-        setFriendsRanking((profiles || []).map(d => ({ ...d, avatar_url: null })) as RankingUser[]);
-      } else {
-        // Only show current user if no friends
-        const { data: myProfile } = await supabase
-          .from('user_rankings')
-          .select('user_id, name, total_conversations, current_streak, longest_streak, current_adaptive_level')
-          .eq('user_id', authUserId)
-          .single();
-        
-        setFriendsRanking(myProfile ? [{ ...myProfile, avatar_url: null } as RankingUser] : []);
-      }
+      if (profilesError) throw profilesError;
+
+      setFriendsRanking((profiles || []).map(p => ({ ...p, avatar_url: null })));
     } catch (error) {
       console.error('Error fetching friends ranking:', error);
     } finally {
@@ -176,28 +156,28 @@ const Leaderboard: React.FC = () => {
     }
   }, [authUserId]);
 
-  // Fetch groups
+  // Fetch user's groups
   const fetchGroups = useCallback(async () => {
     if (!authUserId) return;
     setIsLoadingGroups(true);
     try {
-      // Fetch groups user is member of
-      const { data: memberGroups } = await supabase
-        .from('group_members')
-        .select('group_id')
-        .eq('user_id', authUserId);
-
-      const groupIds = memberGroups?.map(m => m.group_id) || [];
-
-      // Fetch groups created by user
-      const { data: ownedGroups } = await supabase
+      // Get groups the user owns
+      const { data: ownedGroups, error: ownedError } = await supabase
         .from('evolution_groups')
         .select('*')
         .eq('created_by', authUserId);
 
-      // Fetch groups user is member of
+      if (ownedError) throw ownedError;
+
+      // Get groups the user is a member of using RPC
+      const { data: groupIds, error: memberError } = await supabase
+        .rpc('get_user_group_ids', { _user_id: authUserId });
+
+      if (memberError) throw memberError;
+
+      // Fetch those groups
       let memberGroupsData: EvolutionGroup[] = [];
-      if (groupIds.length > 0) {
+      if (groupIds && groupIds.length > 0) {
         const { data } = await supabase
           .from('evolution_groups')
           .select('*')
@@ -247,8 +227,8 @@ const Leaderboard: React.FC = () => {
 
       if (!friendUserId) {
         toast({
-          title: "Usuário não encontrado",
-          description: "Não encontramos um usuário com este email.",
+          title: t('leaderboard.toast.userNotFound'),
+          description: t('leaderboard.toast.userNotFoundDesc'),
           variant: "destructive",
         });
         return;
@@ -256,8 +236,8 @@ const Leaderboard: React.FC = () => {
 
       if (friendUserId === authUserId) {
         toast({
-          title: "Ops!",
-          description: "Você não pode adicionar a si mesmo.",
+          title: t('leaderboard.toast.cannotAddSelf'),
+          description: t('leaderboard.toast.cannotAddSelfDesc'),
           variant: "destructive",
         });
         return;
@@ -271,8 +251,8 @@ const Leaderboard: React.FC = () => {
 
       if (existing) {
         toast({
-          title: "Já são amigos",
-          description: "Vocês já estão conectados ou há um pedido pendente.",
+          title: t('leaderboard.toast.alreadyFriends'),
+          description: t('leaderboard.toast.alreadyFriendsDesc'),
           variant: "destructive",
         });
         return;
@@ -289,8 +269,8 @@ const Leaderboard: React.FC = () => {
       if (error) throw error;
 
       toast({
-        title: "Amigo adicionado!",
-        description: "Vocês agora podem competir juntos.",
+        title: t('leaderboard.toast.friendAdded'),
+        description: t('leaderboard.toast.friendAddedDesc'),
       });
       
       setFriendEmail('');
@@ -301,8 +281,8 @@ const Leaderboard: React.FC = () => {
     } catch (error) {
       console.error('Error inviting friend:', error);
       toast({
-        title: "Erro",
-        description: "Não foi possível adicionar o amigo.",
+        title: t('leaderboard.toast.error'),
+        description: t('leaderboard.toast.errorAddFriend'),
         variant: "destructive",
       });
       setIsInvitingFriend(false);
@@ -334,8 +314,8 @@ const Leaderboard: React.FC = () => {
         });
 
       toast({
-        title: "Grupo criado!",
-        description: `Compartilhe o código: ${data.invite_code}`,
+        title: t('leaderboard.toast.groupCreated'),
+        description: `${t('leaderboard.toast.groupCreatedDesc')} ${data.invite_code}`,
       });
       
       setGroupName('');
@@ -343,8 +323,8 @@ const Leaderboard: React.FC = () => {
     } catch (error) {
       console.error('Error creating group:', error);
       toast({
-        title: "Erro",
-        description: "Não foi possível criar o grupo.",
+        title: t('leaderboard.toast.error'),
+        description: t('leaderboard.toast.errorCreateGroup'),
         variant: "destructive",
       });
     } finally {
@@ -370,8 +350,8 @@ const Leaderboard: React.FC = () => {
 
       if (!group) {
         toast({
-          title: "Grupo não encontrado",
-          description: "Código de convite inválido.",
+          title: t('leaderboard.toast.groupNotFound'),
+          description: t('leaderboard.toast.groupNotFoundDesc'),
           variant: "destructive",
         });
         return;
@@ -386,8 +366,8 @@ const Leaderboard: React.FC = () => {
 
       if (existing) {
         toast({
-          title: "Já é membro",
-          description: "Você já faz parte deste grupo.",
+          title: t('leaderboard.toast.alreadyMember'),
+          description: t('leaderboard.toast.alreadyMemberDesc'),
           variant: "destructive",
         });
         return;
@@ -403,8 +383,8 @@ const Leaderboard: React.FC = () => {
       if (error) throw error;
 
       toast({
-        title: "Entrou no grupo!",
-        description: `Você agora faz parte de "${group.name}".`,
+        title: t('leaderboard.toast.joinedGroup'),
+        description: `${t('leaderboard.toast.joinedGroupDesc')} "${group.name}".`,
       });
       
       setGroupInviteCode('');
@@ -412,8 +392,8 @@ const Leaderboard: React.FC = () => {
     } catch (error) {
       console.error('Error joining group:', error);
       toast({
-        title: "Erro",
-        description: "Não foi possível entrar no grupo.",
+        title: t('leaderboard.toast.error'),
+        description: t('leaderboard.toast.errorJoinGroup'),
         variant: "destructive",
       });
     } finally {
@@ -426,8 +406,8 @@ const Leaderboard: React.FC = () => {
     setCopiedCode(code);
     setTimeout(() => setCopiedCode(null), 2000);
     toast({
-      title: "Código copiado!",
-      description: "Compartilhe com seus amigos.",
+      title: t('leaderboard.toast.codeCopied'),
+      description: t('leaderboard.toast.codeCopiedDesc'),
     });
   };
 
@@ -449,10 +429,10 @@ const Leaderboard: React.FC = () => {
       <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto">
         <div className="mb-6 sm:mb-8">
           <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground mb-1 sm:mb-2">
-            Ranking e Competição
+            {t('leaderboard.title')}
           </h1>
           <p className="text-sm sm:text-base text-muted-foreground">
-            Desafie seus amigos e veja quem evolui mais rápido
+            {t('leaderboard.subtitle')}
           </p>
         </div>
 
@@ -460,15 +440,15 @@ const Leaderboard: React.FC = () => {
           <TabsList className="w-full grid grid-cols-3 h-auto">
             <TabsTrigger value="global" className="gap-1.5 sm:gap-2 py-2 sm:py-2.5 text-xs sm:text-sm">
               <Trophy className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span className="hidden xs:inline sm:inline">Global</span>
+              <span className="hidden xs:inline sm:inline">{t('leaderboard.tabs.global')}</span>
             </TabsTrigger>
             <TabsTrigger value="friends" className="gap-1.5 sm:gap-2 py-2 sm:py-2.5 text-xs sm:text-sm">
               <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span className="hidden xs:inline sm:inline">Amigos</span>
+              <span className="hidden xs:inline sm:inline">{t('leaderboard.tabs.friends')}</span>
             </TabsTrigger>
             <TabsTrigger value="groups" className="gap-1.5 sm:gap-2 py-2 sm:py-2.5 text-xs sm:text-sm">
               <Target className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span className="hidden xs:inline sm:inline">Grupos</span>
+              <span className="hidden xs:inline sm:inline">{t('leaderboard.tabs.groups')}</span>
             </TabsTrigger>
           </TabsList>
 
@@ -478,9 +458,9 @@ const Leaderboard: React.FC = () => {
               <div className="p-3 sm:p-4 border-b border-border bg-muted/50 flex items-center justify-between">
                 <h3 className="font-semibold flex items-center gap-2 text-sm sm:text-base">
                   <Trophy className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-                  <span className="hidden xs:inline">Ranking Global</span>
-                  <span className="xs:hidden">Global</span>
-                  <span className="hidden sm:inline"> - Top 50</span>
+                  <span className="hidden xs:inline">{t('leaderboard.global.title')}</span>
+                  <span className="xs:hidden">{t('leaderboard.tabs.global')}</span>
+                  <span className="hidden sm:inline"> - {t('leaderboard.global.top50')}</span>
                 </h3>
                 <Button 
                   size="sm" 
@@ -505,13 +485,14 @@ const Leaderboard: React.FC = () => {
                       position={index + 1}
                       isCurrentUser={player.user_id === authUserId}
                       getRankIcon={getRankIcon}
+                      t={t}
                     />
                   ))
                 ) : (
                   <div className="p-6 sm:p-8 text-center text-muted-foreground">
                     <Trophy className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 opacity-50" />
-                    <p className="text-sm sm:text-base">Nenhum usuário no ranking ainda.</p>
-                    <p className="text-xs sm:text-sm mt-1">Seja o primeiro a praticar!</p>
+                    <p className="text-sm sm:text-base">{t('leaderboard.global.empty')}</p>
+                    <p className="text-xs sm:text-sm mt-1">{t('leaderboard.global.beFirst')}</p>
                   </div>
                 )}
               </div>
@@ -524,13 +505,13 @@ const Leaderboard: React.FC = () => {
             <div className="bg-card rounded-xl border border-border p-3 sm:p-4">
               <h3 className="font-semibold mb-3 sm:mb-4 flex items-center gap-2 text-sm sm:text-base">
                 <UserPlus className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-                Adicionar Amigo
+                {t('leaderboard.friends.addFriend')}
               </h3>
               <div className="flex gap-2">
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
-                    placeholder="Email do amigo"
+                    placeholder={t('leaderboard.friends.emailPlaceholder')}
                     value={friendEmail}
                     onChange={(e) => setFriendEmail(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && inviteFriend()}
@@ -552,7 +533,7 @@ const Leaderboard: React.FC = () => {
               <div className="p-3 sm:p-4 border-b border-border bg-muted/50 flex items-center justify-between">
                 <h3 className="font-semibold flex items-center gap-2 text-sm sm:text-base">
                   <Users className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-                  Ranking entre Amigos
+                  {t('leaderboard.friends.title')}
                 </h3>
                 <Button 
                   size="sm" 
@@ -577,13 +558,14 @@ const Leaderboard: React.FC = () => {
                       position={index + 1}
                       isCurrentUser={player.user_id === authUserId}
                       getRankIcon={getRankIcon}
+                      t={t}
                     />
                   ))
                 ) : (
                   <div className="p-6 sm:p-8 text-center text-muted-foreground">
                     <Users className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 opacity-50" />
-                    <p className="font-medium text-sm sm:text-base">Adicione amigos para competir!</p>
-                    <p className="text-xs sm:text-sm mt-1">Use o email deles para conectar.</p>
+                    <p className="font-medium text-sm sm:text-base">{t('leaderboard.friends.empty')}</p>
+                    <p className="text-xs sm:text-sm mt-1">{t('leaderboard.friends.useEmail')}</p>
                   </div>
                 )}
               </div>
@@ -598,11 +580,11 @@ const Leaderboard: React.FC = () => {
               <div className="bg-card rounded-xl border border-border p-3 sm:p-4">
                 <h3 className="font-semibold mb-3 sm:mb-4 flex items-center gap-2 text-sm sm:text-base">
                   <Plus className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-                  Criar Grupo
+                  {t('leaderboard.groups.createGroup')}
                 </h3>
                 <div className="flex gap-2">
                   <Input
-                    placeholder="Nome do grupo"
+                    placeholder={t('leaderboard.groups.groupNamePlaceholder')}
                     value={groupName}
                     onChange={(e) => setGroupName(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && createGroup()}
@@ -612,7 +594,7 @@ const Leaderboard: React.FC = () => {
                     {isCreatingGroup ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
-                      'Criar'
+                      t('leaderboard.groups.create')
                     )}
                   </Button>
                 </div>
@@ -622,11 +604,11 @@ const Leaderboard: React.FC = () => {
               <div className="bg-card rounded-xl border border-border p-3 sm:p-4">
                 <h3 className="font-semibold mb-3 sm:mb-4 flex items-center gap-2 text-sm sm:text-base">
                   <Users className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-                  Entrar em Grupo
+                  {t('leaderboard.groups.joinGroup')}
                 </h3>
                 <div className="flex gap-2">
                   <Input
-                    placeholder="Código de convite"
+                    placeholder={t('leaderboard.groups.inviteCodePlaceholder')}
                     value={groupInviteCode}
                     onChange={(e) => setGroupInviteCode(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && joinGroup()}
@@ -636,7 +618,7 @@ const Leaderboard: React.FC = () => {
                     {isJoiningGroup ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
-                      'Entrar'
+                      t('leaderboard.groups.join')
                     )}
                   </Button>
                 </div>
@@ -648,7 +630,7 @@ const Leaderboard: React.FC = () => {
               <div className="flex items-center justify-between">
                 <h3 className="font-semibold flex items-center gap-2 text-sm sm:text-base">
                   <Target className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-                  Meus Grupos
+                  {t('leaderboard.groups.myGroups')}
                 </h3>
                 <Button 
                   size="sm" 
@@ -673,8 +655,8 @@ const Leaderboard: React.FC = () => {
               ) : groups.length === 0 ? (
                 <div className="bg-card rounded-xl border border-border p-6 sm:p-8 text-center text-muted-foreground">
                   <Target className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 opacity-50" />
-                  <p className="font-medium text-sm sm:text-base">Você ainda não faz parte de nenhum grupo.</p>
-                  <p className="text-xs sm:text-sm mt-1">Crie um ou peça um código de convite!</p>
+                  <p className="font-medium text-sm sm:text-base">{t('leaderboard.groups.empty')}</p>
+                  <p className="text-xs sm:text-sm mt-1">{t('leaderboard.groups.createOrJoin')}</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 gap-3 sm:gap-4">
@@ -696,7 +678,7 @@ const Leaderboard: React.FC = () => {
                         </div>
                         <div className="flex items-center gap-2 ml-2 flex-shrink-0">
                           {group.created_by === authUserId && (
-                            <span className="text-[10px] sm:text-xs bg-primary/10 text-primary px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full">Admin</span>
+                            <span className="text-[10px] sm:text-xs bg-primary/10 text-primary px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full">{t('groupModal.admin')}</span>
                           )}
                           <ChevronRight className="w-4 h-4 text-muted-foreground" />
                         </div>
@@ -748,7 +730,8 @@ const RankingRow: React.FC<{
   position: number;
   isCurrentUser: boolean;
   getRankIcon: (position: number) => React.ReactNode;
-}> = ({ player, position, isCurrentUser, getRankIcon }) => (
+  t: (key: string) => string;
+}> = ({ player, position, isCurrentUser, getRankIcon, t }) => (
   <div className={`flex items-center gap-2 sm:gap-4 p-3 sm:p-4 ${isCurrentUser ? 'bg-primary/5 border-l-2 border-l-primary' : 'hover:bg-muted/50'} transition-colors`}>
     <div className="w-6 sm:w-8 flex justify-center flex-shrink-0">
       {getRankIcon(position)}
@@ -765,19 +748,19 @@ const RankingRow: React.FC<{
     <div className="flex-1 min-w-0">
       <p className={`font-medium truncate text-sm sm:text-base ${isCurrentUser ? 'text-primary' : 'text-foreground'}`}>
         {player.name}
-        {isCurrentUser && <span className="text-[10px] sm:text-xs ml-1 sm:ml-2 opacity-75">(você)</span>}
+        {isCurrentUser && <span className="text-[10px] sm:text-xs ml-1 sm:ml-2 opacity-75">{t('leaderboard.you')}</span>}
       </p>
       <p className="text-xs sm:text-sm text-muted-foreground">
-        Nível {player.current_adaptive_level || 'A1'}
+        {t('leaderboard.stats.level')} {player.current_adaptive_level || 'A1'}
       </p>
     </div>
     
     <div className="flex items-center gap-2 sm:gap-4 text-xs sm:text-sm flex-shrink-0">
-      <div className="flex items-center gap-0.5 sm:gap-1 text-muted-foreground" title="Conversas">
+      <div className="flex items-center gap-0.5 sm:gap-1 text-muted-foreground" title={t('leaderboard.stats.conversations')}>
         <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
         <span>{player.total_conversations}</span>
       </div>
-      <div className="flex items-center gap-0.5 sm:gap-1 text-orange-500" title="Sequência atual">
+      <div className="flex items-center gap-0.5 sm:gap-1 text-orange-500" title={t('leaderboard.stats.streak')}>
         <Flame className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
         <span>{player.current_streak || 0}</span>
       </div>

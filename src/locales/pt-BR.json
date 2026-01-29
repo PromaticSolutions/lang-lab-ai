@@ -412,5 +412,181 @@
       "audio": "Áudio"
     },
     "continue": "Continuar"
+  },
+  "history": {
+    "title": "Histórico",
+    "subtitle": "Suas conversas e progresso",
+    "stats": {
+      "conversations": "Conversas",
+      "avgScore": "Score médio",
+      "minPracticed": "Min praticados"
+    },
+    "search": "Buscar conversas...",
+    "filters": {
+      "scenario": "Cenário",
+      "allScenarios": "Todos os cenários",
+      "sort": "Ordenar",
+      "recent": "Mais recentes",
+      "highScore": "Maior score"
+    },
+    "loading": "Carregando conversas...",
+    "tryAgain": "Tentar novamente",
+    "empty": {
+      "noConversations": "Nenhuma conversa ainda",
+      "noResults": "Nenhum resultado",
+      "startFirst": "Comece uma conversa para ver seu histórico",
+      "adjustFilters": "Tente ajustar os filtros"
+    },
+    "startFirst": "Iniciar primeira conversa",
+    "date": {
+      "today": "Hoje",
+      "yesterday": "Ontem",
+      "daysAgo": "dias atrás"
+    }
+  },
+  "leaderboard": {
+    "title": "Ranking e Competição",
+    "subtitle": "Desafie seus amigos e veja quem evolui mais rápido",
+    "tabs": {
+      "global": "Global",
+      "friends": "Amigos",
+      "groups": "Grupos"
+    },
+    "global": {
+      "title": "Ranking Global",
+      "top50": "Top 50",
+      "empty": "Nenhum usuário no ranking ainda.",
+      "beFirst": "Seja o primeiro a praticar!"
+    },
+    "friends": {
+      "title": "Ranking entre Amigos",
+      "addFriend": "Adicionar Amigo",
+      "emailPlaceholder": "Email do amigo",
+      "empty": "Adicione amigos para competir!",
+      "useEmail": "Use o email deles para conectar."
+    },
+    "groups": {
+      "title": "Grupos",
+      "createGroup": "Criar Grupo",
+      "joinGroup": "Entrar em Grupo",
+      "groupNamePlaceholder": "Nome do grupo",
+      "inviteCodePlaceholder": "Código de convite",
+      "create": "Criar",
+      "join": "Entrar",
+      "myGroups": "Meus Grupos",
+      "empty": "Você ainda não faz parte de nenhum grupo.",
+      "createOrJoin": "Crie um ou peça um código de convite!"
+    },
+    "stats": {
+      "conversations": "Conversas",
+      "streak": "Sequência",
+      "level": "Nível"
+    },
+    "you": "(você)",
+    "toast": {
+      "userNotFound": "Usuário não encontrado",
+      "userNotFoundDesc": "Não encontramos um usuário com este email.",
+      "cannotAddSelf": "Ops!",
+      "cannotAddSelfDesc": "Você não pode adicionar a si mesmo.",
+      "alreadyFriends": "Já são amigos",
+      "alreadyFriendsDesc": "Vocês já estão conectados ou há um pedido pendente.",
+      "friendAdded": "Amigo adicionado!",
+      "friendAddedDesc": "Vocês agora podem competir juntos.",
+      "error": "Erro",
+      "errorAddFriend": "Não foi possível adicionar o amigo.",
+      "groupCreated": "Grupo criado!",
+      "groupCreatedDesc": "Compartilhe o código:",
+      "errorCreateGroup": "Não foi possível criar o grupo.",
+      "groupNotFound": "Grupo não encontrado",
+      "groupNotFoundDesc": "Código de convite inválido.",
+      "alreadyMember": "Já é membro",
+      "alreadyMemberDesc": "Você já faz parte deste grupo.",
+      "joinedGroup": "Entrou no grupo!",
+      "joinedGroupDesc": "Você agora faz parte de",
+      "errorJoinGroup": "Não foi possível entrar no grupo.",
+      "codeCopied": "Código copiado!",
+      "codeCopiedDesc": "Compartilhe com seus amigos."
+    }
+  },
+  "groupModal": {
+    "inviteCode": "Código de Convite",
+    "members": "Membros",
+    "noMembers": "Nenhum membro encontrado.",
+    "admin": "Admin",
+    "deleteGroup": "Excluir Grupo",
+    "leaveGroup": "Sair do Grupo",
+    "leftGroup": "Saiu do grupo",
+    "leftGroupDesc": "Você saiu de",
+    "errorLeave": "Não foi possível sair do grupo.",
+    "deletedGroup": "Grupo excluído",
+    "deletedGroupDesc": "O grupo foi excluído.",
+    "errorDelete": "Não foi possível excluir o grupo.",
+    "errorLoadMembers": "Não foi possível carregar os membros do grupo."
+  },
+  "scenarios": {
+    "restaurant": {
+      "title": "Restaurante",
+      "description": "Peça comida e converse com o garçom"
+    },
+    "interview": {
+      "title": "Entrevista",
+      "description": "Treine respostas profissionais"
+    },
+    "airport": {
+      "title": "Aeroporto",
+      "description": "Check-in, imigração e embarque"
+    },
+    "hotel": {
+      "title": "Hotel",
+      "description": "Reservas, pedidos e problemas"
+    },
+    "shopping": {
+      "title": "Compras",
+      "description": "Pergunte preços, tamanhos e compare itens"
+    },
+    "business": {
+      "title": "Reunião de Negócios",
+      "description": "Converse de forma profissional"
+    },
+    "hospital": {
+      "title": "Hospital",
+      "description": "Descreva sintomas e receba instruções"
+    },
+    "transport": {
+      "title": "Uber/Transporte",
+      "description": "Converse com motorista"
+    }
+  },
+  "support": {
+    "title": "Suporte Fluency IA",
+    "greeting": "Olá! 👋 Sou o assistente de suporte do Fluency IA. Como posso ajudar você hoje?",
+    "inputPlaceholder": "Digite sua mensagem...",
+    "online": "Online",
+    "escalation": {
+      "title": "Precisa de mais ajuda?",
+      "description": "Se precisar de mais assistência, entre em contato com nossa equipe diretamente:",
+      "whatsapp": "Contato via WhatsApp"
+    }
+  },
+  "feedback": {
+    "title": "Feedback",
+    "overallScore": "Pontuação Geral",
+    "estimatedLevel": "Nível estimado",
+    "metrics": {
+      "grammar": "Gramática",
+      "vocabulary": "Vocabulário",
+      "clarity": "Clareza",
+      "fluency": "Fluência",
+      "coherence": "Coerência"
+    },
+    "newAchievements": "Novas Conquistas!",
+    "mainErrors": "Principais Erros",
+    "noErrors": "Nenhum erro encontrado. Excelente trabalho!",
+    "correctPhrases": "O que você acertou",
+    "keepPracticing": "Continue praticando para acertar mais!",
+    "improvements": "O que melhorar",
+    "greatJob": "Continue assim! Seu desempenho está ótimo.",
+    "backToHome": "Voltar ao início",
+    "tryAgain": "Tentar novamente"
   }
 }

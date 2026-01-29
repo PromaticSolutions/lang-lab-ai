@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Dialog,
   DialogContent,
@@ -53,6 +54,7 @@ export const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
   onGroupLeft,
   onGroupDeleted,
 }) => {
+  const { t } = useTranslation();
   const { authUserId } = useApp();
   const { toast } = useToast();
   const [members, setMembers] = useState<GroupMember[]>([]);
@@ -100,7 +102,7 @@ export const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
         const ranking = rankingData?.find(r => r.user_id === member.user_id);
         return {
           user_id: member.user_id,
-          name: ranking?.name || 'Usuário',
+          name: ranking?.name || t('common.loading'),
           role: member.role,
           total_conversations: ranking?.total_conversations || 0,
           current_streak: ranking?.current_streak || 0,
@@ -114,8 +116,8 @@ export const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
     } catch (error) {
       console.error('Error fetching group members:', error);
       toast({
-        title: 'Erro',
-        description: 'Não foi possível carregar os membros do grupo.',
+        title: t('leaderboard.toast.error'),
+        description: t('groupModal.errorLoadMembers'),
         variant: 'destructive',
       });
     } finally {
@@ -129,8 +131,8 @@ export const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
     setCopiedCode(true);
     setTimeout(() => setCopiedCode(false), 2000);
     toast({
-      title: 'Código copiado!',
-      description: 'Compartilhe com seus amigos.',
+      title: t('leaderboard.toast.codeCopied'),
+      description: t('leaderboard.toast.codeCopiedDesc'),
     });
   };
 
@@ -148,8 +150,8 @@ export const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
       if (error) throw error;
 
       toast({
-        title: 'Saiu do grupo',
-        description: `Você saiu de "${group.name}".`,
+        title: t('groupModal.leftGroup'),
+        description: `${t('groupModal.leftGroupDesc')} "${group.name}".`,
       });
       
       onOpenChange(false);
@@ -157,8 +159,8 @@ export const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
     } catch (error) {
       console.error('Error leaving group:', error);
       toast({
-        title: 'Erro',
-        description: 'Não foi possível sair do grupo.',
+        title: t('leaderboard.toast.error'),
+        description: t('groupModal.errorLeave'),
         variant: 'destructive',
       });
     } finally {
@@ -186,8 +188,8 @@ export const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
       if (error) throw error;
 
       toast({
-        title: 'Grupo excluído',
-        description: `O grupo "${group.name}" foi excluído.`,
+        title: t('groupModal.deletedGroup'),
+        description: `${t('groupModal.deletedGroupDesc')}`,
       });
       
       onOpenChange(false);
@@ -195,8 +197,8 @@ export const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
     } catch (error) {
       console.error('Error deleting group:', error);
       toast({
-        title: 'Erro',
-        description: 'Não foi possível excluir o grupo.',
+        title: t('leaderboard.toast.error'),
+        description: t('groupModal.errorDelete'),
         variant: 'destructive',
       });
     } finally {
@@ -233,7 +235,7 @@ export const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
             {/* Invite Code */}
             <div className="flex items-center justify-between bg-muted/50 rounded-lg p-3">
               <div>
-                <p className="text-xs text-muted-foreground mb-1">Código de Convite</p>
+                <p className="text-xs text-muted-foreground mb-1">{t('groupModal.inviteCode')}</p>
                 <code className="text-sm font-mono font-medium">{group.invite_code}</code>
               </div>
               <Button
@@ -254,7 +256,7 @@ export const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
             <div>
               <h4 className="font-medium mb-3 flex items-center gap-2 text-sm">
                 <Users className="w-4 h-4" />
-                Membros ({members.length}/{group.max_members})
+                {t('groupModal.members')} ({members.length}/{group.max_members})
               </h4>
               
               <div className="space-y-2 max-h-60 overflow-y-auto">
@@ -271,7 +273,7 @@ export const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
                   ))
                 ) : members.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-4">
-                    Nenhum membro encontrado.
+                    {t('groupModal.noMembers')}
                   </p>
                 ) : (
                   members.map((member, index) => (
@@ -296,21 +298,21 @@ export const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
                           {member.name}
                           {member.role === 'admin' && (
                             <span className="ml-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">
-                              Admin
+                              {t('groupModal.admin')}
                             </span>
                           )}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          Nível {member.current_adaptive_level}
+                          {t('leaderboard.stats.level')} {member.current_adaptive_level}
                         </p>
                       </div>
                       
                       <div className="flex items-center gap-3 text-xs">
-                        <div className="flex items-center gap-1 text-muted-foreground" title="Conversas">
+                        <div className="flex items-center gap-1 text-muted-foreground" title={t('leaderboard.stats.conversations')}>
                           <MessageSquare className="w-3.5 h-3.5" />
                           <span>{member.total_conversations}</span>
                         </div>
-                        <div className="flex items-center gap-1 text-orange-500" title="Sequência">
+                        <div className="flex items-center gap-1 text-orange-500" title={t('leaderboard.stats.streak')}>
                           <Flame className="w-3.5 h-3.5" />
                           <span>{member.current_streak}</span>
                         </div>
@@ -336,7 +338,7 @@ export const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
                   ) : (
                     <Trash2 className="w-4 h-4 mr-2" />
                   )}
-                  Excluir Grupo
+                  {t('groupModal.deleteGroup')}
                 </Button>
               ) : (
                 <Button
@@ -351,7 +353,7 @@ export const GroupDetailModal: React.FC<GroupDetailModalProps> = ({
                   ) : (
                     <LogOut className="w-4 h-4 mr-2" />
                   )}
-                  Sair do Grupo
+                  {t('groupModal.leaveGroup')}
                 </Button>
               )}
             </div>

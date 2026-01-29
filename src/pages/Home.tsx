@@ -170,8 +170,8 @@ const Home: React.FC = () => {
                     <span className="text-2xl">{scenario.icon}</span>
                   </div>
                   
-                  <h3 className="font-semibold text-foreground mb-1.5">{scenario.title}</h3>
-                  <p className="text-sm text-muted-foreground line-clamp-2">{scenario.description}</p>
+                  <h3 className="font-semibold text-foreground mb-1.5">{scenario.titleKey ? t(scenario.titleKey) : scenario.title}</h3>
+                  <p className="text-sm text-muted-foreground line-clamp-2">{scenario.descriptionKey ? t(scenario.descriptionKey) : scenario.description}</p>
                   
                   {!locked && (
                     <div className="mt-4 pt-4 border-t border-border">
