@@ -222,11 +222,16 @@ Example format:
 ---
 💡 Tip: When ordering food, use "I would like..." instead of "I want..." to sound more polite.`) : '';
 
+    // Get current date for context
+    const currentDate = new Date().toISOString().split('T')[0];
+
     const systemPrompt = `${langConfig.instruction}
 
 SCENARIO: ${scenarioContext}
 
 USER LEVEL: ${levelInstruction}
+
+CURRENT DATE: ${currentDate}
 
 CRITICAL INSTRUCTIONS:
 - You MUST respond ONLY in ${langConfig.name}. NEVER switch to another language for the main response.
@@ -235,7 +240,8 @@ CRITICAL INSTRUCTIONS:
 - If the user makes errors, continue naturally in the conversation.
 - Stay strictly in the scenario context.
 - Be encouraging and patient.
-- Adapt your vocabulary and complexity to the user's level.${instantFeedbackInstruction}`;
+- Adapt your vocabulary and complexity to the user's level.
+- When discussing dates, events, or time-related topics, use the current date as reference.${instantFeedbackInstruction}`;
 
     logStep("System prompt configured", { language, scenarioId, level: adaptiveLevel || userLevel });
 
