@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Send, Mic, MicOff, Volume2, Lightbulb, Loader2, Lock, X, Trophy } from 'lucide-react';
+import { Send, Mic, MicOff, Volume2, Lightbulb, Loader2, X, Trophy } from 'lucide-react';
 import { useDemoTTS } from '@/hooks/useDemoTTS';
 import { useDemoAudioRecorder } from '@/hooks/useDemoAudioRecorder';
 import { useToast } from '@/hooks/use-toast';
@@ -14,7 +14,21 @@ const MAX_DEMO_MESSAGES = 5;
 const SESSION_KEY = 'fluency_demo_count';
 const ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-const INITIAL_MESSAGE = "Hi! Let's simulate a real conversation. Tell me which scenario you'd like to practice — a restaurant, a job interview, a hotel, or any other situation!";
+// Available demo scenarios
+const DEMO_SCENARIOS = [
+  { id: 'interview', icon: '💼', title: 'Job Interview', description: 'Pratique entrevistas de emprego' },
+  { id: 'airport', icon: '✈️', title: 'Airport', description: 'Simule situações no aeroporto' },
+  { id: 'hotel', icon: '🏨', title: 'Hotel', description: 'Check-in, reservas e mais' },
+  { id: 'hospital', icon: '🏥', title: 'Hospital', description: 'Consultas e emergências' },
+] as const;
+
+// Initial messages per scenario
+const scenarioInitialMessages: Record<string, string> = {
+  interview: "Good morning! Thank you for coming in today. Please, have a seat. Let's start — can you tell me a little about yourself?",
+  airport: "Hello! Welcome to the airport. May I see your passport and boarding pass, please?",
+  hotel: "Good afternoon! Welcome to Grand Hotel. How may I assist you today?",
+  hospital: "Hello. I'm Dr. Smith. What brings you in today? How can I help you?",
+};
 
 interface DemoMessage {
   id: string;
@@ -31,6 +45,11 @@ interface InstantFeedback {
 const ChatDemo: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Scenario selection state
+  const [selectedScenario, setSelectedScenario] = useState<string | null>(null);
+  const selectedScenarioRef = useRef<string | null>(null);
+
   const [messages, setMessages] = useState<DemoMessage[]>([]);
   const [instantFeedbacks, setInstantFeedbacks] = useState<Record<string, InstantFeedback>>({});
   const [inputValue, setInputValue] = useState('');
@@ -40,7 +59,6 @@ const ChatDemo: React.FC = () => {
   const [feedback, setFeedback] = useState<ConversationFeedback | null>(null);
   const [pendingAudioMessage, setPendingAudioMessage] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const initializedRef = useRef(false);
 
   // Message count
   const getCount = () => parseInt(sessionStorage.getItem(SESSION_KEY) || '0', 10);
@@ -95,30 +113,27 @@ const ChatDemo: React.FC = () => {
   }, [pendingAudioMessage, isTyping, isTranscribing]);
 
   const handleMicClick = () => {
-    if (isRecording) {
-      stopRecording();
-    } else {
-      startRecording();
-    }
+    if (isRecording) stopRecording();
+    else startRecording();
   };
 
-  // Init
-  useEffect(() => {
-    if (initializedRef.current) return;
-    initializedRef.current = true;
+  // Handle scenario selection — starts the chat
+  const handleSelectScenario = (scenarioId: string) => {
+    setSelectedScenario(scenarioId);
+    selectedScenarioRef.current = scenarioId;
     sessionStorage.setItem(SESSION_KEY, '0');
 
+    const initialContent = scenarioInitialMessages[scenarioId] || scenarioInitialMessages.interview;
     const msg: DemoMessage = {
       id: '1',
       role: 'assistant',
-      content: INITIAL_MESSAGE,
+      content: initialContent,
       timestamp: new Date(),
     };
     setMessages([msg]);
-
     autoPlayedRef.current.add('1');
-    setTimeout(() => speakMessage(INITIAL_MESSAGE, '1'), 500);
-  }, [speakMessage]);
+    setTimeout(() => speakMessage(initialContent, '1'), 500);
+  };
 
   // Auto scroll
   useEffect(() => {
@@ -134,7 +149,7 @@ const ChatDemo: React.FC = () => {
       const feedbackPart = parts.slice(1).join(separator).trim();
       let feedbackType: 'tip' | 'praise' = 'tip';
       if (feedbackPart.includes('✨')) feedbackType = 'praise';
-      const cleanFeedback = feedbackPart.replace(/^💡\s*Dica:\s*/i, '').replace(/^✨\s*/i, '').trim();
+      const cleanFeedback = feedbackPart.replace(/^💡\s*Dica:\s*/i, '').replace(/^💡\s*Tip:\s*/i, '').replace(/^✨\s*/i, '').trim();
       if (cleanFeedback) return { mainResponse, feedback: { tip: cleanFeedback, type: feedbackType } };
     }
     return { mainResponse: content, feedback: null };
@@ -151,7 +166,7 @@ const ChatDemo: React.FC = () => {
         },
         body: JSON.stringify({
           messages: allMessages.map(m => ({ role: m.role, content: m.content })),
-          scenarioId: 'restaurant',
+          scenarioId: selectedScenarioRef.current || 'interview',
           userLevel: 'intermediate',
           userLanguage: 'english',
           isDemoMode: true,
@@ -175,18 +190,9 @@ const ChatDemo: React.FC = () => {
       });
     } catch (error) {
       console.error('Demo analysis error:', error);
-      // Fallback metrics
       setFeedback({
-        overallScore: 72,
-        grammar: 68,
-        vocabulary: 75,
-        clarity: 74,
-        fluency: 70,
-        contextCoherence: 73,
-        errors: [],
-        improvements: ['Continue praticando regularmente'],
-        correctPhrases: ['Boa tentativa!'],
-        estimatedLevel: 'B1',
+        overallScore: 72, grammar: 68, vocabulary: 75, clarity: 74, fluency: 70, contextCoherence: 73,
+        errors: [], improvements: ['Continue praticando regularmente'], correctPhrases: ['Boa tentativa!'], estimatedLevel: 'B1',
       });
     } finally {
       setIsAnalyzing(false);
@@ -207,13 +213,10 @@ const ChatDemo: React.FC = () => {
     setMessages(prev => [...prev, userMsg]);
     setIsTyping(true);
 
-    // Check limit AFTER adding message
     if (count >= MAX_DEMO_MESSAGES) {
       setIsTyping(false);
       setIsLimitReached(true);
-      // Analyze the conversation
-      const allMsgs = [...messages, userMsg];
-      analyzeConversation(allMsgs);
+      analyzeConversation([...messages, userMsg]);
       return;
     }
 
@@ -224,6 +227,9 @@ const ChatDemo: React.FC = () => {
         : allMessages;
       const chatMessages = contextMessages.map(m => ({ role: m.role, content: m.content }));
 
+      // Use the locked scenario from ref to prevent any drift
+      const lockedScenario = selectedScenarioRef.current || 'interview';
+
       const response = await fetch(CHAT_URL, {
         method: 'POST',
         headers: {
@@ -232,7 +238,7 @@ const ChatDemo: React.FC = () => {
         },
         body: JSON.stringify({
           messages: chatMessages,
-          scenarioId: 'restaurant',
+          scenarioId: lockedScenario,
           userLevel: 'intermediate',
           userLanguage: 'english',
           adaptiveLevel: null,
@@ -295,7 +301,6 @@ const ChatDemo: React.FC = () => {
         setInstantFeedbacks(prev => ({ ...prev, [assistantId]: instantFeedback }));
       }
 
-      // Autoplay
       if (mainResponse && !autoPlayedRef.current.has(assistantId)) {
         autoPlayedRef.current.add(assistantId);
         stopTTS();
@@ -316,7 +321,6 @@ const ChatDemo: React.FC = () => {
     await sendMessage(text);
   };
 
-  // Score color helper
   const getScoreColor = (score: number) => {
     if (score >= 80) return 'text-green-500';
     if (score >= 60) return 'text-yellow-500';
@@ -329,6 +333,58 @@ const ChatDemo: React.FC = () => {
     return 'bg-red-500/20';
   };
 
+  // ─── Scenario Selection Screen ───
+  if (!selectedScenario) {
+    return (
+      <div className="h-[100dvh] flex flex-col bg-background">
+        {/* Header */}
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-card shrink-0">
+          <div className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center text-white font-bold text-lg shrink-0">
+            F
+          </div>
+          <div className="flex-1 min-w-0">
+            <h2 className="font-semibold text-foreground">Fluency IA</h2>
+            <p className="text-xs text-muted-foreground">Escolha um cenário para começar</p>
+          </div>
+          <div className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-lg shrink-0">
+            Demo
+          </div>
+        </div>
+
+        {/* Scenario Selection */}
+        <div className="flex-1 flex flex-col items-center justify-center px-4 py-8">
+          <div className="max-w-md w-full space-y-6">
+            <div className="text-center space-y-2">
+              <h1 className="text-xl font-bold text-foreground">Experimente uma simulação real</h1>
+              <p className="text-sm text-muted-foreground">Escolha o cenário que deseja praticar em inglês</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              {DEMO_SCENARIOS.map((scenario) => (
+                <button
+                  key={scenario.id}
+                  onClick={() => handleSelectScenario(scenario.id)}
+                  className="group flex flex-col items-center gap-2 p-5 rounded-2xl border-2 border-border bg-card text-center transition-all duration-200 hover:border-primary hover:shadow-md active:scale-[0.97]"
+                >
+                  <span className="text-3xl">{scenario.icon}</span>
+                  <span className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">{scenario.title}</span>
+                  <span className="text-xs text-muted-foreground leading-tight">{scenario.description}</span>
+                </button>
+              ))}
+            </div>
+
+            <p className="text-center text-xs text-muted-foreground">
+              Você poderá enviar até {MAX_DEMO_MESSAGES} mensagens nesta demonstração
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Chat Screen ───
+  const currentScenarioData = DEMO_SCENARIOS.find(s => s.id === selectedScenario);
+
   return (
     <div className="h-[100dvh] flex flex-col bg-background overflow-hidden relative">
       {/* Header */}
@@ -339,11 +395,11 @@ const ChatDemo: React.FC = () => {
         <div className="flex-1 min-w-0">
           <h2 className="font-semibold text-foreground">Fluency IA</h2>
           <p className="text-xs text-muted-foreground">
-            {isTyping ? 'Digitando...' : isRecording ? 'Gravando...' : isTranscribing ? 'Processando...' : isSpeaking || isTTSLoading ? 'Falando...' : 'Online'}
+            {isTyping ? 'Digitando...' : isRecording ? 'Gravando...' : isTranscribing ? 'Processando...' : isSpeaking || isTTSLoading ? 'Falando...' : currentScenarioData ? `${currentScenarioData.icon} ${currentScenarioData.title}` : 'Online'}
           </p>
         </div>
         <div className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-lg shrink-0">
-          Demo • {Math.max(0, MAX_DEMO_MESSAGES - getCount())}/{MAX_DEMO_MESSAGES}
+          {Math.max(0, MAX_DEMO_MESSAGES - getCount())}/{MAX_DEMO_MESSAGES}
         </div>
       </div>
 
@@ -411,7 +467,7 @@ const ChatDemo: React.FC = () => {
           </div>
         )}
 
-        {/* Metrics Panel - inline after limit */}
+        {/* Metrics Panel */}
         {isLimitReached && (
           <div className="py-4 space-y-4">
             {isAnalyzing ? (
@@ -421,7 +477,6 @@ const ChatDemo: React.FC = () => {
               </div>
             ) : feedback ? (
               <div className="space-y-4">
-                {/* End message */}
                 <div className="text-center py-3">
                   <div className="inline-flex items-center gap-2 bg-muted rounded-full px-4 py-2">
                     <Trophy className="w-4 h-4 text-primary" />
@@ -429,9 +484,7 @@ const ChatDemo: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Score card */}
                 <div className="bg-card border border-border rounded-2xl p-5 space-y-4">
-                  {/* Overall Score */}
                   <div className="text-center space-y-1">
                     <div className={`text-4xl font-bold ${getScoreColor(feedback.overallScore)}`}>
                       {feedback.overallScore}
@@ -440,7 +493,6 @@ const ChatDemo: React.FC = () => {
                     <p className="text-xs text-muted-foreground">Nível estimado: <span className="font-semibold text-foreground">{feedback.estimatedLevel}</span></p>
                   </div>
 
-                  {/* Metrics grid */}
                   <div className="grid grid-cols-2 gap-3">
                     {[
                       { label: 'Gramática', value: feedback.grammar },
@@ -455,7 +507,6 @@ const ChatDemo: React.FC = () => {
                     ))}
                   </div>
 
-                  {/* Improvements */}
                   {feedback.improvements.length > 0 && (
                     <div className="space-y-2">
                       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Dicas para melhorar</p>
@@ -466,7 +517,6 @@ const ChatDemo: React.FC = () => {
                   )}
                 </div>
 
-                {/* CTA */}
                 <div className="space-y-2 pt-2">
                   <Button size="lg" className="w-full" onClick={() => navigate('/auth')}>
                     Inscrever-se agora
