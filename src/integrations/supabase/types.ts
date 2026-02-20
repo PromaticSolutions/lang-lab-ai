@@ -248,6 +248,7 @@ export type Database = {
           endpoint: string
           id: string
           p256dh: string
+          subscription: string | null
           updated_at: string
           user_id: string
         }
@@ -257,6 +258,7 @@ export type Database = {
           endpoint: string
           id?: string
           p256dh: string
+          subscription?: string | null
           updated_at?: string
           user_id: string
         }
@@ -266,6 +268,7 @@ export type Database = {
           endpoint?: string
           id?: string
           p256dh?: string
+          subscription?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -547,6 +550,7 @@ export type Database = {
         Args: { _group_id: string; _user_id: string }
         Returns: boolean
       }
+      send_daily_push: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
