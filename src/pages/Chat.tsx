@@ -2,11 +2,14 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { useApp } from '@/contexts/AppContext';
 import { scenarios, isScenarioLocked } from '@/data/scenarios';
 import { Message, Conversation, ConversationFeedback, Language } from '@/types';
-import { ArrowLeft, Send, Mic, MicOff, Languages, MoreVertical, Loader2, X, Volume2, Lightbulb } from 'lucide-react';
+import { ArrowLeft, Send, Mic, MicOff, MoreVertical, Loader2, X } from 'lucide-react';
+import { ChatMessageBubble } from '@/components/ChatMessageBubble';
+import { AutoGrowTextarea } from '@/components/AutoGrowTextarea';
+import { useSmartScroll } from '@/hooks/useSmartScroll';
+import { useViewportHeight } from '@/hooks/useViewportHeight';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAudioRecorder } from '@/hooks/useAudioRecorder';
@@ -95,6 +98,7 @@ const Chat: React.FC = () => {
   const [conversationId] = useState(() => crypto.randomUUID());
   const [authUserId, setAuthUserId] = useState<string | undefined>(undefined);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const viewportHeight = useViewportHeight();
   
   // Track which messages have already been auto-played (prevents re-playing)
   const autoPlayedMessagesRef = useRef<Set<string>>(new Set());
@@ -228,9 +232,17 @@ const Chat: React.FC = () => {
     }
   }, [scenario, userLanguage, voiceEnabled, isVoiceLoading, messages.length, speakMessage]);
 
+  // Smart scroll: use the hook instead of naive scrollIntoView
+  const { containerRef: messagesContainerRef, checkIfNearBottom, forceScrollToBottom } = useSmartScroll([messages]);
+
+  // Force scroll when user sends a message
+  const sendMessageOriginal = useRef(false);
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    if (sendMessageOriginal.current) {
+      forceScrollToBottom();
+      sendMessageOriginal.current = false;
+    }
+  }, [messages, forceScrollToBottom]);
 
   // Parse feedback from response
   const parseResponseWithFeedback = (content: string): { mainResponse: string; feedback: InstantFeedback | null } => {
@@ -340,6 +352,7 @@ const Chat: React.FC = () => {
     };
 
     setMessages(prev => [...prev, userMessage]);
+    sendMessageOriginal.current = true;
     setIsTyping(true);
 
     try {
@@ -616,12 +629,15 @@ const Chat: React.FC = () => {
   }
 
   return (
-    <div className="h-[100dvh] flex flex-col bg-background overflow-hidden">
+    <div
+      className="flex flex-col bg-background overflow-hidden"
+      style={{ height: `${viewportHeight}px` }}
+    >
       {/* Header - fixed height */}
       <div className="flex items-center gap-3 px-3 py-3 border-b border-border bg-card shrink-0 sm:px-4">
         <button 
           onClick={() => navigate('/home')} 
-          className="w-10 h-10 rounded-xl hover:bg-muted flex items-center justify-center shrink-0"
+          className="w-11 h-11 rounded-xl hover:bg-muted flex items-center justify-center shrink-0"
         >
           <ArrowLeft className="w-5 h-5 text-foreground" />
         </button>
@@ -634,7 +650,6 @@ const Chat: React.FC = () => {
           </p>
         </div>
         
-        {/* Credits - compact in header */}
         {credits && (
           <CreditsDisplay
             totalCredits={credits.total_credits}
@@ -650,70 +665,28 @@ const Chat: React.FC = () => {
           />
         )}
         
-        <button className="w-10 h-10 rounded-xl hover:bg-muted flex items-center justify-center shrink-0">
+        <button className="w-11 h-11 rounded-xl hover:bg-muted flex items-center justify-center shrink-0">
           <MoreVertical className="w-5 h-5 text-muted-foreground" />
         </button>
       </div>
 
       {/* Messages area - scrollable, takes remaining space */}
-      <div className="flex-1 overflow-y-auto px-3 py-4 space-y-3 sm:px-4 overscroll-contain min-h-0">
+      <div
+        ref={messagesContainerRef}
+        onScroll={checkIfNearBottom}
+        className="flex-1 overflow-y-auto px-3 py-4 space-y-3 sm:px-4 overscroll-contain min-h-0"
+      >
         {messages.map((message) => (
-          <div key={message.id} className="space-y-2">
-            <div
-              className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              <div
-                className={`max-w-[85%] sm:max-w-[75%] rounded-2xl px-4 py-3 ${
-                  message.role === 'user'
-                    ? 'gradient-primary text-white rounded-br-md'
-                    : 'bg-muted text-foreground rounded-bl-md'
-                }`}
-              >
-                <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
-                <div className="flex items-center justify-end gap-2 mt-1">
-                  <span className={`text-xs ${message.role === 'user' ? 'text-white/70' : 'text-muted-foreground'}`}>
-                    {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </span>
-                  {message.role === 'assistant' && (
-                    <>
-                      <button
-                        onClick={() => handleTranslate(message.id, message.content)}
-                        className="text-xs text-primary hover:underline"
-                      >
-                        <Languages className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleSpeakMessage(message.id, message.content)}
-                        className={`text-xs hover:underline ${
-                          (isSpeaking || isTTSLoading) && currentPlayingMessageIdRef.current === message.id 
-                            ? 'text-primary' 
-                            : 'text-muted-foreground'
-                        }`}
-                      >
-                        <Volume2 className="w-4 h-4" />
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-            
-            {/* Instant Feedback Card */}
-            {message.role === 'assistant' && instantFeedbacks[message.id] && (
-              <div className="flex justify-start pl-2">
-                <div className={`max-w-[85%] sm:max-w-[75%] rounded-xl px-3 py-2 text-sm border ${
-                  instantFeedbacks[message.id].type === 'praise' 
-                    ? 'bg-green-50 border-green-200 text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-300'
-                    : 'bg-amber-50 border-amber-200 text-amber-800 dark:bg-amber-900/20 dark:border-amber-800 dark:text-amber-300'
-                }`}>
-                  <div className="flex items-start gap-2">
-                    <Lightbulb className="w-4 h-4 shrink-0 mt-0.5" />
-                    <p className="text-xs">{instantFeedbacks[message.id].tip}</p>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+          <ChatMessageBubble
+            key={message.id}
+            message={message}
+            feedback={instantFeedbacks[message.id]}
+            isSpeaking={isSpeaking}
+            isTTSLoading={isTTSLoading}
+            isCurrentlyPlaying={currentPlayingMessageIdRef.current === message.id}
+            onTranslate={handleTranslate}
+            onSpeak={handleSpeakMessage}
+          />
         ))}
         {isTyping && messages[messages.length - 1]?.content === '' && (
           <div className="flex justify-start">
@@ -729,7 +702,7 @@ const Chat: React.FC = () => {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Recording indicator - fixed */}
+      {/* Recording indicator */}
       {isRecording && (
         <div className="px-4 py-3 bg-destructive/10 border-t border-destructive/20 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2">
@@ -743,7 +716,7 @@ const Chat: React.FC = () => {
         </div>
       )}
 
-      {/* Transcribing indicator - fixed */}
+      {/* Transcribing indicator */}
       {isTranscribing && (
         <div className="px-4 py-3 bg-primary/10 border-t border-primary/20 flex items-center gap-2 shrink-0">
           <Loader2 className="w-4 h-4 animate-spin text-primary" />
@@ -752,35 +725,37 @@ const Chat: React.FC = () => {
       )}
 
       {/* Input Area - fixed at bottom */}
-      <div className="bg-card border-t border-border px-3 py-3 space-y-3 sm:px-4 pb-safe shrink-0">
-        <div className="flex items-center gap-2">
+      <div className="bg-card border-t border-border/50 shadow-[0_-2px_10px_-3px_hsl(0_0%_0%/0.2)] px-3 py-3 space-y-3 sm:px-4 pb-safe shrink-0">
+        <div className="flex items-end gap-2">
           <div className="flex-1">
-            <Input
+            <AutoGrowTextarea
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               placeholder={t('chat.placeholder')}
-              onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+              onSubmit={handleSendMessage}
               disabled={isTyping || isRecording || isTranscribing}
-              className="bg-background"
+              maxRows={4}
+              className="bg-background min-h-[44px]"
             />
           </div>
           
-          {/* Mic button */}
+          {/* Mic button - 44px touch target */}
           <Button 
             size="icon" 
             variant={isRecording ? "destructive" : "outline"}
             onClick={handleMicClick}
             disabled={isTranscribing || isTyping}
-            className={`shrink-0 ${isRecording ? 'animate-pulse' : 'border-primary text-primary hover:bg-primary hover:text-primary-foreground'}`}
+            className={`shrink-0 w-11 h-11 ${isRecording ? 'animate-pulse' : 'border-primary text-primary hover:bg-primary hover:text-primary-foreground'}`}
           >
             {isRecording ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
           </Button>
           
-          {/* Send button */}
+          {/* Send button - 44px touch target */}
           <Button 
             size="icon" 
             onClick={handleSendMessage}
             disabled={!inputValue.trim() || isTyping || isRecording || isTranscribing}
+            className="shrink-0 w-11 h-11"
           >
             <Send className="w-5 h-5" />
           </Button>
